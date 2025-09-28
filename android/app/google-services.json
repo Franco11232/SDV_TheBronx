@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "262419846644",
+    "project_id": "thebronx-378ae",
+    "storage_bucket": "thebronx-378ae.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:262419846644:android:56a80e95bf9523c492d5a1",
+        "android_client_info": {
+          "package_name": "com.example.svd_thebronx"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBRMWfM0ARRDM9tysknfmEZhdStktC_vpk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
