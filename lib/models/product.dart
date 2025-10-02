@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class Product {
   final String id; 
   final String name;
@@ -13,18 +15,36 @@ class Product {
     required this.disponible,
   });
 
-  factory Product.fromMap(String id, Map<String, dynamic> m) => Product(
-    id: id,
-    name: m['name'] ?? '',
-    price: (m['price'] ?? 0).toDouble(),
-    category: m['category'] ?? '',
-    disponible: m['disponible'] ?? true,
-  );
+  Map<String, dynamic> toMap() {
+    return {
+      'nombre': name,
+      'precio': price,
+      'categoria': category,
+      'disponible': disponible,
+    };
+  }
 
-  Map<String, dynamic> toMap() => {
-    'name': name,
-    'price': price,
-    'category': category,
-    'disponible': disponible,
-  };
+  factory Product.fromMap(String id, Map<String, dynamic> m){
+    return Product(
+      id: id,
+      name: m['nombre'] ?? '',
+      price: (m['precio'] ?? 0).toDouble(),
+      category: m['categoria'] ?? '',
+      disponible: m['disponible'] ?? true,
+    );
+  }
+  factory Product.fromDocument(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    return Product (
+      id: doc.id,
+      name: doc['nombre'] ?? '',
+      price: (doc['precio'] ?? 0).toDouble(),
+      category: doc['categoria'] ?? '',
+      disponible: doc['disponible'] ?? true,
+    );
+  }   
 }
+
+
+
+

@@ -5,7 +5,7 @@ class ComandaTile extends StatelessWidget {
   final Comanda comanda;
   final void Function(String nuevoEstado)? onActualizarEstado;
 
-  ComandaTile({required this.comanda, this.onActualizarEstado});
+  const ComandaTile({super.key, required this.comanda, this.onActualizarEstado});
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +29,7 @@ class ComandaTile extends StatelessWidget {
                   PopupMenuItem(value: 'listo', child: Text('Listo')),
                 ],
               )
-            : null,
+            : null, 
       ),
     );
   }
