@@ -4,13 +4,14 @@ import '../models/comanda.dart';
 class ComandaTile extends StatelessWidget {
   final Comanda comanda;
   final void Function(String nuevoEstado)? onActualizarEstado;
+  final VoidCallback? onTap;
 
-  const ComandaTile({super.key, required this.comanda, this.onActualizarEstado});
+  const ComandaTile({super.key, required this.comanda, this.onActualizarEstado, this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+      margin: EdgeInsets.symmetric(vertical: 6, horizontal: 8),
       child: ListTile(
         title: Text(comanda.clientName.isEmpty ? 'Sin nombre' : comanda.clientName),
         subtitle: Column(
@@ -21,6 +22,7 @@ class ComandaTile extends StatelessWidget {
             Text('Estado: ${comanda.estado}'),
           ],
         ),
+        isThreeLine: true,
         trailing: onActualizarEstado != null
             ? PopupMenuButton<String>(
                 onSelected: onActualizarEstado,

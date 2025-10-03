@@ -2,27 +2,54 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:svd_thebronx/models/product.dart';
 
 class ProductService {
-  // final CollectionReference _col = FirebaseFirestore.instance.collection('productos');
-  // Stream<List<Product>> streamProductos() => _col.snapshots().map((s) => 
-  //   s.docs.map((d) => Product(
-  //     id: d.id,
-  //     name: d['name'] ?? '',
-  //     price: (d['price'] ?? 0).toDouble(),
-  //     category: d['category'] ?? '',
-  //     disponible: d['disponible'] ?? true,
-  //   )).toList()
-  // );
-  // Future<void> addProduct(Product p) => _col.add(p.toMap());
-  // Future<void> updateProduct(Product p) => _col.doc(p.id).update(p.toMap());
-  // Future<void> deleteProduct(String id) => _col.doc(id).delete();
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  final _db = FirebaseFirestore.instance;
-
-  Stream<QuerySnapshot> streamProductos(){
-    return _db.collection("productos").snapshots();
+  Stream<List<Product>> streamProductos(){
+    return _db.collection("productos").snapshots().map((snapshot){
+      return snapshot.docs.map((doc){
+        return Product.fromMap(doc.data(), doc.id);
+      }).toList();
+    });
   }
 
-  Future<void> addProducto (Product p) async{
-    await _db.collection("productos").add(p.toMap());
+  Future<void> addProduct (Product product) async{
+    try {
+      await _db.collection("productos").add(product.toMap());
+      print("producto añaido correctamente");
+    }catch (e){
+      print("Error: no se pudo añadir el producto: $e");
+    }    
+  }
+
+  Future<void> updateProduct (Product product) async {
+    if (product.id.isEmpty){
+      print("Error: el producto no tiene ID");
+      return;
+    }
+    try{
+      await _db
+        .collection("productos")
+        .doc(product.id)
+        .update(product.toMap());
+      print("producto actualizado correctamente");
+    }catch (e){
+      print("Error al actualizar producto: $e");
+    }
+  }
+
+  Future<void> deleteProduct(String id) async{
+   if (id.isEmpty){
+    print("Error el producto no tiene ID");
+    return;
+  }
+  try {
+    await _db.collection("productos").doc(id).delete();
+    print("Producto eliminado correctamente");
+  } catch (e){
+    print("Error al eliminar el producto: $e");
+   }
   }
 }
+
+
+
