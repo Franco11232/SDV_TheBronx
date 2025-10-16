@@ -8,9 +8,6 @@ import 'package:svd_thebronx/screens/cocinero/cocinero_shell.dart';
 import 'providers/auth_provider.dart';
 import 'providers/comanda_provider.dart';
 import 'screens/login_screen.dart';
-import 'screens/cajero/cajer_home.dart';
-import 'screens/cocinero/cocinero_home.dart';
-import 'screens/admin/admin_home.dart';
 import 'firebase_options.dart'; 
 
 void main() async {
