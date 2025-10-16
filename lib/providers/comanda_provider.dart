@@ -13,8 +13,8 @@ class ComandaProvider extends ChangeNotifier {
         .where('estado', whereIn: ['pendiente', 'en_preparacion'])
         .snapshots()
         .map((snapshot) => snapshot.docs
-            .map((doc) => Comanda.fromMap(doc.id, doc.data()))
-            .toList());
+        .map((doc) => Comanda.fromMap(doc.id, doc.data()))
+        .toList());
   }
 
   /// 🧩 Método para actualizar el estado

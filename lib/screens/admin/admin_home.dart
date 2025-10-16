@@ -9,8 +9,8 @@ class AdminHome extends StatelessWidget {
 
   void _abrirDialogoProducto(BuildContext context, {Product? producto}) {
     final nombreCtrl = TextEditingController(text: producto?.name ?? '');
-    final precioCtrl = TextEditingController(
-        text: producto?.price.toStringAsFixed(2) ?? '');
+    final precioCtrl =
+    TextEditingController(text: producto?.price.toStringAsFixed(2) ?? '');
     final categoriaCtrl = TextEditingController(text: producto?.category ?? '');
     final disponible = ValueNotifier<bool>(producto?.disponible ?? true);
 
@@ -58,7 +58,8 @@ class AdminHome extends StatelessWidget {
               if (name.isEmpty || price <= 0) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                      content: Text('Ingrese nombre y precio válido')),
+                    content: Text('Ingrese nombre y precio válido'),
+                  ),
                 );
                 return;
               }
@@ -67,6 +68,7 @@ class AdminHome extends StatelessWidget {
                 id: producto?.id ?? '',
                 name: name,
                 price: price,
+                stock: 0,
                 category: category,
                 disponible: disponible.value,
               );
@@ -125,58 +127,53 @@ class AdminHome extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Admin - Productos')),
-      body: StreamBuilder<List<Product>>(
-        stream: _ps.streamProductos(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+    return StreamBuilder<List<Product>>(
+      stream: _ps.streamProduct(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-          if (snapshot.hasError) {
-            return Center(
-              child: Text('Error al cargar productos: ${snapshot.error}'),
-            );
-          }
-
-          final productos = snapshot.data ?? [];
-
-          if (productos.isEmpty) {
-            return const Center(child: Text('No hay productos'));
-          }
-
-          return ListView.builder(
-            itemCount: productos.length,
-            itemBuilder: (context, index) {
-              final p = productos[index];
-              return ListTile(
-                leading: const Icon(Icons.fastfood),
-                title: Text(p.name),
-                subtitle: Text('\$${p.price.toStringAsFixed(2)} - ${p.category}'),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.edit),
-                      onPressed: () =>
-                          _abrirDialogoProducto(context, producto: p),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete),
-                      onPressed: () => _eliminarProducto(context, p),
-                    ),
-                  ],
-                ),
-              );
-            },
+        if (snapshot.hasError) {
+          return Center(
+            child: Text('Error al cargar productos: ${snapshot.error}'),
           );
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _abrirDialogoProducto(context),
-        child: const Icon(Icons.add),
-      ),
+        }
+
+        final productos = snapshot.data ?? [];
+
+        if (productos.isEmpty) {
+          return const Center(child: Text('No hay productos'));
+        }
+
+        return ListView.builder(
+          itemCount: productos.length,
+          itemBuilder: (context, index) {
+            final p = productos[index];
+            return Card(  // <-- Aquí agregamos Card
+                child: ListTile(
+                  leading: const Icon(Icons.fastfood),
+                  title: Text(p.name),
+                  subtitle: Text('\$${p.price.toStringAsFixed(2)} - ${p.category}'),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.edit),
+                        onPressed: () =>
+                            _abrirDialogoProducto(context, producto: p),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete),
+                        onPressed: () => _eliminarProducto(context, p),
+                  ),
+                ],
+              ),
+            ),
+            );
+          },
+        );
+      },
     );
   }
 }

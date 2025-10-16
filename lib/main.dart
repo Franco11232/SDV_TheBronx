@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
+import 'package:svd_thebronx/providers/almacen_provider.dart';
+import 'package:svd_thebronx/screens/admin/admin_shell.dart';
+import 'package:svd_thebronx/screens/cajero/cajero_shell.dart';
+import 'package:svd_thebronx/screens/cocinero/cocinero_shell.dart';
 import 'providers/auth_provider.dart';
 import 'providers/comanda_provider.dart';
 import 'screens/login_screen.dart';
@@ -20,15 +24,15 @@ class MyApp extends StatelessWidget{
 
   @override Widget build(BuildContext context){
     return MultiProvider(
-      providers: [ChangeNotifierProvider(create: (_) => AuthProvider()), ChangeNotifierProvider(create: (_) => ComandaProvider())],
+      providers: [ChangeNotifierProvider(create: (_) => AuthProvider()), ChangeNotifierProvider(create: (_) => ComandaProvider()),ChangeNotifierProvider(create: (_) => AlmacenProvider())],
       child: MaterialApp(
         title: 'The Bronx FT',
         initialRoute: '/',
         routes: {
           '/': (_) => LoginScreen(),
-          '/cajero': (_) => CajeroHome(),
-          '/cocinero': (_) => CocineroHome(),
-          '/admin': (_) => AdminHome(),
+          '/cajero': (_) => CajeroShell(),
+          '/cocinero': (_) => CocineroShell(),
+          '/admin': (_) => AdminShell(),
         },
       ),
     );

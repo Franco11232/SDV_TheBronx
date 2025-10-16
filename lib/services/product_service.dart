@@ -4,17 +4,17 @@ import 'package:svd_thebronx/models/product.dart';
 class ProductService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  Stream<List<Product>> streamProductos(){
+  Stream<List<Product>> streamProduct(){
     return _db.collection("productos").snapshots().map((snapshot){
       return snapshot.docs.map((doc){
-        return Product.fromMap(doc.data(), doc.id);
+        return Product.fromMap(doc.id, doc.data());
       }).toList();
     });
   }
 
   Future<void> addProduct (Product product) async{
     try {
-      await _db.collection("productos").add(product.toMap());
+      await _db.collection("product").add(product.toMap());
       print("producto añaido correctamente");
     }catch (e){
       print("Error: no se pudo añadir el producto: $e");
