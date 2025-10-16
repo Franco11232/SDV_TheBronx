@@ -22,7 +22,7 @@ class MyApp extends StatelessWidget{
     return MultiProvider(
       providers: [ChangeNotifierProvider(create: (_) => AuthProvider()), ChangeNotifierProvider(create: (_) => ComandaProvider())],
       child: MaterialApp(
-        title: 'Comandas',
+        title: 'The Bronx FT',
         initialRoute: '/',
         routes: {
           '/': (_) => LoginScreen(),
