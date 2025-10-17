@@ -2,10 +2,13 @@
 import 'package:flutter/material.dart';
 import '../../widgets/app_drawer.dart';
 import 'cajer_home.dart';
+import 'nueva_comanda_screen.dart';
+import 'historial_screen.dart';
 import 'ventas_screen.dart';
 
 class CajeroShell extends StatefulWidget {
   const CajeroShell({super.key});
+
   @override
   State<CajeroShell> createState() => _CajeroShellState();
 }
@@ -29,20 +32,24 @@ class _CajeroShellState extends State<CajeroShell> {
 
     switch (currentScreen) {
       case 'home':
-        body = CajeroHome();
+        body = const CajeroHome(); //const
+        title = 'Productos';
+        break;
+      case 'comanda':
+        body = const NuevaComandaScreen(productosSeleccionados: [],);
         title = 'Nueva Comanda';
         break;
-      case 'ventas':
-        body = const VentasScreen();
-        title = 'Ventas';
-        break;
       case 'historial':
-        body = const Center(child: Text('Historial de comandas en construcción'));
-        title = 'Historial';
+        body = HistorialScreen();//const
+        title = 'Historial de Comandas';
+        break;
+        case 'ventas':
+        body = VentasScreen();//const
+        title = 'Ventas';
         break;
       default:
         body = CajeroHome();
-        title = 'Nueva Comanda';
+        title = 'Productos';
     }
 
     return Scaffold(

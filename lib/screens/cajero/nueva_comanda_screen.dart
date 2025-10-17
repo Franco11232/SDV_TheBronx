@@ -1,78 +1,136 @@
+// lib/screens/cajero/nueva_comanda_screen.dart
 import 'package:flutter/material.dart';
-import '../../models/product.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/comanda.dart';
-import '../../services/comanda_service.dart';
+import '../../models/item_comanda.dart';
 
 class NuevaComandaScreen extends StatefulWidget {
-  final Product? productoInicial;
-  const NuevaComandaScreen({super.key, this.productoInicial});
-  @override _NuevaComandaScreenState createState()=> _NuevaComandaScreenState();
+  final List<ItemComanda> productosSeleccionados;
+
+  const NuevaComandaScreen({super.key, required this.productosSeleccionados});
+
+  @override
+  State<NuevaComandaScreen> createState() => _NuevaComandaScreenState();
 }
 
-class _NuevaComandaScreenState extends State<NuevaComandaScreen>{
-  final _nombre = TextEditingController();
-  final _telefono = TextEditingController();
-  String tipo = 'comer_aqui';
-  String pagoEstado = 'pendiente';
-  String metodo = 'efectivo';
-  List<ItemComanda> items = [];
-  final ComandaService _cs = ComandaService();
+class _NuevaComandaScreenState extends State<NuevaComandaScreen> {
+  final _nombreCtrl = TextEditingController();
+  final _telefonoCtrl = TextEditingController();
+  final _direccionCtrl = TextEditingController();
+  String _tipo = 'Para llevar';
+  bool _guardando = false;
 
-  @override
-  void initState(){
-    super.initState();
-    if(widget.productoInicial!=null){
-      items.add(ItemComanda(productId: widget.productoInicial!.id, nombre: widget.productoInicial!.name, cantidad: 1, priceUnit: widget.productoInicial!.price));
+  double get total =>
+      widget.productosSeleccionados.fold(0, (sum, p) => sum + p.subTotal);
+
+  Future<void> _guardarComanda() async {
+    if (_nombreCtrl.text.isEmpty || _telefonoCtrl.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ingrese nombre y teléfono del cliente')),
+      );
+      return;
     }
-  }
 
-  double get total => items.fold(0, (s, it) => s + it.subTotal);
-
-  void addProduct(Product p){
-    final idx = items.indexWhere((i)=>i.productId==p.id);
-    if(idx>=0){
-      final existing = items[idx];
-      items[idx] = ItemComanda(productId: existing.productId, nombre: existing.nombre, cantidad: existing.cantidad+1, priceUnit: existing.priceUnit);
-    } else {
-      items.add(ItemComanda(productId: p.id, nombre: p.name, cantidad: 1, priceUnit: p.price));
+    if (_tipo == 'Domicilio' && _direccionCtrl.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ingrese la dirección para domicilio')),
+      );
+      return;
     }
-    setState((){});
-  }
 
-  Future<void> enviar(){
-    final c = Comanda(
-      clientName: _nombre.text.trim(),
-      clientPhone: _telefono.text.trim(),
-      type: tipo,
+    setState(() => _guardando = true);
+
+    final nueva = Comanda(
+      id: null,
+      clientName: _nombreCtrl.text.trim(),
+      clientPhone: _telefonoCtrl.text.trim(),
+      type: _tipo,
+      address: _tipo == 'Domicilio' ? _direccionCtrl.text.trim() : '',
       estado: 'pendiente',
-      payment: {'estado': pagoEstado, 'metodo': metodo},
+      payment: {'estado': 'pendiente', 'metodo': 'efectivo'},
+      date: DateTime.now(),
       total: total,
-      details: items, id: '', address: '', date: null,
+      details: widget.productosSeleccionados,
     );
-    return _cs.crearComanda(c).then((_){
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Comanda enviada')));
-      Navigator.pop(context);
-    });
+
+    try {
+      await FirebaseFirestore.instance
+          .collection('comandas')
+          .add(nueva.toMap());
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Comanda creada correctamente')),
+      );
+      Navigator.pop(context, true); // volver con éxito
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al crear comanda: $e')),
+      );
+    } finally {
+      setState(() => _guardando = false);
+    }
   }
 
   @override
-  Widget build(BuildContext context){
+  Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Nueva Comanda')),
+      appBar: AppBar(title: const Text('Nueva Comanda')),
       body: Padding(
-        padding: EdgeInsets.all(12),
-        child: Column(children:[
-          TextField(controller: _nombre, decoration: InputDecoration(labelText: 'Nombre')),
-          TextField(controller: _telefono, decoration: InputDecoration(labelText: 'Teléfono'), keyboardType: TextInputType.phone),
-          DropdownButton<String>(value: tipo, items: [DropdownMenuItem(value: 'comer_aqui', child: Text('Comer aquí')), DropdownMenuItem(value:'para_llevar', child: Text('Para llevar')), DropdownMenuItem(value:'domicilio', child: Text('Domicilio'))], onChanged: (v){ if(v!=null) setState(()=>tipo=v); }),
-          DropdownButton<String>(value: pagoEstado, items: [DropdownMenuItem(value:'pagado', child:Text('Pagado')), DropdownMenuItem(value:'pendiente', child:Text('Pendiente'))], onChanged:(v){ if(v!=null) setState(()=>pagoEstado=v); }),
-          DropdownButton<String>(value: metodo, items: [DropdownMenuItem(value:'efectivo', child:Text('Efectivo')), DropdownMenuItem(value:'transferencia', child:Text('Transferencia'))], onChanged:(v){ if(v!=null) setState(()=>metodo=v); }),
-          SizedBox(height:8),
-          Expanded(child: ListView.builder(itemCount: items.length, itemBuilder:(c,i){ final it=items[i]; return ListTile(title: Text(it.nombre), subtitle: Text('x\${it.cantidad} - \$\${it.subtotal}')); })),
-          Text('Total: \$\$${total.toStringAsFixed(2)}'),
-          Row(children:[Expanded(child:ElevatedButton(onPressed: items.isEmpty?null:enviar, child: Text('Enviar comanda')))])
-        ])
-      )
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          children: [
+            TextField(
+              controller: _nombreCtrl,
+              decoration: const InputDecoration(labelText: 'Nombre del cliente'),
+            ),
+            TextField(
+              controller: _telefonoCtrl,
+              decoration: const InputDecoration(labelText: 'Teléfono'),
+              keyboardType: TextInputType.phone,
+            ),
+            DropdownButtonFormField<String>(
+              value: _tipo,
+              items: const [
+                DropdownMenuItem(value: 'Para llevar', child: Text('Para llevar')),
+                DropdownMenuItem(value: 'Domicilio', child: Text('Domicilio')),
+              ],
+              onChanged: (v) => setState(() => _tipo = v ?? 'Para llevar'),
+              decoration: const InputDecoration(labelText: 'Tipo de comanda'),
+            ),
+            if (_tipo == 'Domicilio')
+              TextField(
+                controller: _direccionCtrl,
+                decoration: const InputDecoration(labelText: 'Dirección'),
+              ),
+            const SizedBox(height: 20),
+            Expanded(
+              child: ListView.builder(
+                itemCount: widget.productosSeleccionados.length,
+                itemBuilder: (_, i) {
+                  final p = widget.productosSeleccionados[i];
+                  return ListTile(
+                    title: Text(p.nombre),
+                    subtitle: Text(
+                        '${p.cantidad} x \$${p.priceUnit.toStringAsFixed(2)} = \$${p.subTotal.toStringAsFixed(2)}'),
+                  );
+                },
+              ),
+            ),
+            const Divider(),
+            Text('Total: \$${total.toStringAsFixed(2)}',
+                style: const TextStyle(
+                    fontWeight: FontWeight.bold, fontSize: 18)),
+            const SizedBox(height: 10),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.save),
+              label: Text(_guardando ? 'Guardando...' : 'Guardar Comanda'),
+              onPressed: _guardando ? null : _guardarComanda,
+              style: ElevatedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(50)),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -1,44 +1,15 @@
+// lib/models/comanda.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'item_comanda.dart';
 
-class ItemComanda {
-  final String productId;
-  final String nombre;
-  final int cantidad;
-  final double priceUnit; 
-  final double subTotal;
-
-  ItemComanda({
-    required this.productId,
-    required this.nombre,
-    required this.cantidad,
-    required this.priceUnit,
-  }) : subTotal = cantidad * priceUnit;
-
-  Map<String, dynamic> toMap() => {
-    'productoId': productId,
-    'nombre': nombre,
-    'cantidad': cantidad,
-    'precio_unit': priceUnit,
-    'sub_total': subTotal,
-  };
-
-  factory ItemComanda.fromMap(Map<String, dynamic> m) => ItemComanda(
-    productId: m['productoId'],
-    nombre: m['nombre'] ,
-    cantidad: (m['cantidad'] ?? 0) as int,
-    priceUnit: (m['precio_unit'] ?? 0).toDouble(),
-  );
-
-}
-
-class Comanda{
+class Comanda {
   final String? id;
   final String clientName;
   final String clientPhone;
-  final String type; // "Domicilio" o "Para llevar"
-  final String address; // Solo si es "Domicilio"
-  final String estado; // "Pendiente", "En Proceso", "Completada"
-  final Map<String, dynamic> payment; // {"method": "Efectivo", "amount": 100.0}
+  final String type; // 'comer_aqui', 'para_llevar', 'domicilio' (o similares)
+  final String address;
+  final String estado; // 'pendiente','en_preparacion','listo','entregado'
+  final Map<String, dynamic> payment; // ejemplo: {'estado':'pendiente','metodo':'efectivo'}
   final DateTime? date;
   final double total;
   final List<ItemComanda> details;
@@ -54,34 +25,59 @@ class Comanda{
     required this.date,
     required this.total,
     required this.details,
-  }); 
-  Map<String, dynamic> toMap() => {
-    'cliente': {'nombre': clientName, 'telefono': clientPhone},
-    'tipo': type,
-    'direccion': address,
-    'estado': estado,
-    'pago': payment,
-    'fecha': date != null ? date!.toUtc() : FieldValue.serverTimestamp(),
-    'total': total,
-    'detalles': details.map((i) => i.toMap()).toList(),
-  };
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'cliente': {'nombre': clientName, 'telefono': clientPhone},
+      'tipo': type,
+      'direccion': address,
+      'estado': estado,
+      'pago': payment,
+      'fecha': date != null ? date!.toUtc() : FieldValue.serverTimestamp(),
+      'total': total,
+      'detalles': details.map((d) => d.toMap()).toList(),
+    };
+  }
 
   factory Comanda.fromMap(String id, Map<String, dynamic> m) {
-    final cliente = m['cliente'] ?? {};
-    final detalles = (m['detalles'] as List? ?? [])
+    // cliente puede estar en 'cliente' o 'client'
+    final cliente = (m['cliente'] ?? m['client'] ?? {}) as Map<String, dynamic>;
+    final clienteNombre = cliente['nombre'] ?? cliente['name'] ?? '';
+    final clienteTelefono = cliente['telefono'] ?? cliente['phone'] ?? '';
+
+    // detalles puede estar bajo 'detalles' o 'details' o 'productos'
+    final detallesRaw = m['detalles'] ?? m['details'] ?? m['productos'] ?? [];
+    final detallesList = (detallesRaw as List)
         .map((d) => ItemComanda.fromMap(Map<String, dynamic>.from(d)))
         .toList();
-    final fecha = m['fecha'] is Timestamp ? (m['fecha'] as Timestamp).toDate() : null;
+
+    final fechaRaw = m['fecha'] ?? m['fecha_creacion'] ?? m['date'];
+    DateTime? fecha;
+    if (fechaRaw is Timestamp) fecha = fechaRaw.toDate();
+    else if (fechaRaw is String) {
+      fecha = DateTime.tryParse(fechaRaw);
+    }
+
+    final pagoRaw = m['pago'] ?? m['payment'] ?? {};
+    final pago = Map<String, dynamic>.from(pagoRaw as Map? ?? {'estado': 'pendiente', 'metodo': 'efectivo'});
+
+    final totalRaw = m['total'] ?? m['precio_total'] ?? 0;
+    double total = 0.0;
+    if (totalRaw is num) total = totalRaw.toDouble();
+    else if (totalRaw is String) total = double.tryParse(totalRaw) ?? 0.0;
+
     return Comanda(
       id: id,
-      clientName: cliente['nombre'] ?? '',
-      clientPhone: cliente['telefono'] ?? '',
-      type: m['tipo'] ?? 'comer_aqui',
-      estado: m['estado'] ?? 'pendiente',
-      payment: Map<String, dynamic>.from(m['pago'] ?? {'estado': 'pendiente', 'metodo': 'efectivo'}),
+      clientName: clienteNombre,
+      clientPhone: clienteTelefono,
+      type: (m['tipo'] ?? m['type'] ?? 'comer_aqui').toString(),
+      address: (m['direccion'] ?? m['address'] ?? '').toString(),
+      estado: (m['estado'] ?? m['status'] ?? 'pendiente').toString(),
+      payment: pago,
       date: fecha,
-      total: (m['total'] ?? 0).toDouble(),
-      details: detalles, address: '',
+      total: total,
+      details: detallesList,
     );
   }
 }
