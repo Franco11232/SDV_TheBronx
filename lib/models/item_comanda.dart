@@ -6,33 +6,40 @@ class ItemComanda {
   final double priceUnit;
   final double subTotal;
 
+  // campos opcionales
+  final bool llevaMediaOrdenBones;
+  final String? salsaSeleccionada;
+  final double? precioMediaOrden; // normalmente 75
+
   ItemComanda({
     required this.productId,
     required this.nombre,
     required this.cantidad,
     required this.priceUnit,
-  }) : subTotal = cantidad * priceUnit;
+    this.llevaMediaOrdenBones = false,
+    this.salsaSeleccionada,
+    this.precioMediaOrden,
+  }) : subTotal = (cantidad * priceUnit) +
+      ((llevaMediaOrdenBones && precioMediaOrden != null)
+          ? precioMediaOrden
+          : 0);
 
   Map<String, dynamic> toMap() => {
     'productoId': productId,
-    'productId': productId,
     'nombre': nombre,
-    'name': nombre,
     'cantidad': cantidad,
-    'cantidad_unit': cantidad,
     'precio_unit': priceUnit,
-    'priceUnit': priceUnit,
     'sub_total': subTotal,
-    'subTotal': subTotal,
+    'llevaMediaOrdenBones': llevaMediaOrdenBones,
+    'salsaSeleccionada': salsaSeleccionada,
+    'precioMediaOrden': precioMediaOrden,
   };
 
   factory ItemComanda.fromMap(Map<String, dynamic> m) {
-    // Buscar varias posibles claves
-    final productId =
-        m['productoId'] ?? m['productId'] ?? m['producto_id'] ?? '';
-    final nombre = m['nombre'] ?? m['name'] ?? m['producto'] ?? '';
-    final cantidadRaw = m['cantidad'] ?? m['qty'] ?? m['cantidad_unit'] ?? 0;
-    final precioRaw = m['precio_unit'] ?? m['priceUnit'] ?? m['precio'] ?? 0;
+    final productId = m['productoId'] ?? m['productId'] ?? '';
+    final nombre = m['nombre'] ?? m['name'] ?? '';
+    final cantidadRaw = m['cantidad'] ?? m['qty'] ?? 0;
+    final precioRaw = m['precio_unit'] ?? m['priceUnit'] ?? 0;
 
     int cantidad = 0;
     if (cantidadRaw is int) cantidad = cantidadRaw;
@@ -48,6 +55,10 @@ class ItemComanda {
       nombre: nombre,
       cantidad: cantidad,
       priceUnit: priceUnit,
+      llevaMediaOrdenBones: m['llevaMediaOrdenBones'] ?? false,
+      salsaSeleccionada: m['salsaSeleccionada'],
+      precioMediaOrden:
+      (m['precioMediaOrden'] is num) ? (m['precioMediaOrden'] as num).toDouble() : null,
     );
   }
 }

@@ -1,9 +1,8 @@
-// lib/screens/cajero/cajero_home.dart
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import '../../models/product.dart';
 import '../../providers/comanda_provider.dart';
+import '../../services/product_service.dart';
 import 'nueva_comanda_screen.dart';
 import '../../models/item_comanda.dart';
 
@@ -17,6 +16,7 @@ class CajeroHome extends StatefulWidget {
 class _CajeroHomeState extends State<CajeroHome> {
   String selectedCategory = 'Todos';
   String searchQuery = '';
+  final ProductService _ps = ProductService();
 
   @override
   Widget build(BuildContext context) {
@@ -27,40 +27,9 @@ class _CajeroHomeState extends State<CajeroHome> {
       appBar: AppBar(
         title: _buildSearchBar(),
         backgroundColor: Colors.brown.shade400,
-        actions: [
-          Stack(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.shopping_cart_outlined),
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Carrito próximamente')));
-                },
-              ),
-              if (comandaProvider.productos.isNotEmpty)
-                Positioned(
-                  right: 6,
-                  top: 6,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                        shape: BoxShape.circle, color: Colors.red),
-                    child: Text(
-                      '${comandaProvider.productos.length}',
-                      style:
-                      const TextStyle(color: Colors.white, fontSize: 12),
-                    ),
-                  ),
-                ),
-            ],
-          )
-        ],
       ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('productos')
-            .where('disponible', isEqualTo: true)
-            .snapshots(),
+      body: StreamBuilder<List<Product>>(
+        stream: _ps.getProducts(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -70,21 +39,20 @@ class _CajeroHomeState extends State<CajeroHome> {
                 child: Text('Error al cargar productos: ${snapshot.error}'));
           }
 
-          final productos = snapshot.data!.docs
-              .map((d) => Product.fromMap(d.id, d.data() as Map<String, dynamic>))
+          final productos = snapshot.data!
               .where((p) =>
           (selectedCategory == 'Todos' || p.category == selectedCategory) &&
               p.name.toLowerCase().contains(searchQuery.toLowerCase()))
               .toList();
 
-          final categorias = <String>[
+          final categorias = <String>{
             'Todos',
-            ...{for (var p in snapshot.data!.docs) (p.data() as Map<String, dynamic>)['categoria']}
-          ];
+            ...snapshot.data!.map((p) => p.category)
+          }.toList();
 
           return Column(
             children: [
-              _buildCategoryChips(categorias.toList()),
+              _buildCategoryChips(categorias),
               Expanded(
                 child: productos.isEmpty
                     ? const Center(child: Text('No hay productos disponibles'))
@@ -114,25 +82,25 @@ class _CajeroHomeState extends State<CajeroHome> {
         backgroundColor: Colors.green,
         icon: const Icon(Icons.receipt_long),
         label: Text(
-            'Ver Comanda (${comandaProvider.total.toStringAsFixed(2)})'),
+            'Ver Comanda (\$${comandaProvider.total.toStringAsFixed(2)})'),
         onPressed: () async {
           final created = await Navigator.push(
             context,
             MaterialPageRoute(
               builder: (_) => NuevaComandaScreen(
-                  productosSeleccionados: List.from(comandaProvider.productos),
-            ),
+                productosSeleccionados:
+                List.from(comandaProvider.productos),
+              ),
             ),
           );
           if (created == true) {
-            comandaProvider.clearComanda(); // limpiar carrito
+            comandaProvider.clearComanda();
           }
         },
       ),
     );
   }
 
-  // 🔍 Buscador
   Widget _buildSearchBar() {
     return Container(
       height: 42,
@@ -151,7 +119,6 @@ class _CajeroHomeState extends State<CajeroHome> {
     );
   }
 
-  // 🏷️ Chips de categorías
   Widget _buildCategoryChips(List<String> categorias) {
     return SizedBox(
       height: 50,
@@ -179,8 +146,7 @@ class _CajeroHomeState extends State<CajeroHome> {
     );
   }
 
-  // 🧾 Tarjeta de producto
-  Widget _buildProductCard(Product producto, comandaProvider) {
+  Widget _buildProductCard(Product producto, ComandaProvider comandaProvider) {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       elevation: 4,
@@ -191,10 +157,8 @@ class _CajeroHomeState extends State<CajeroHome> {
           children: [
             Expanded(
               child: Image.network(
-                producto.imageUrl ?? "",
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) =>
-                const Icon(Icons.fastfood, size: 60),
+                 Icon(Icons.fastfood, size: 60) as String,
               ),
             ),
             Text(
@@ -224,9 +188,6 @@ class _CajeroHomeState extends State<CajeroHome> {
                     cantidad: 1,
                     priceUnit: producto.price,
                   ),
-                );
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('${producto.name} agregado')),
                 );
               },
               icon: const Icon(Icons.add_shopping_cart),

@@ -1,62 +1,88 @@
 // lib/models/product.dart
 class Product {
   final String id;
-  final String name;       // corresponde a 'nombre' en Firestore
-  final double price;      // 'precio'
-  final String category;   // 'categoria'
-  final bool disponible;   // 'disponible'
-  final int stock;         // 'stock'
-  final String? imageUrl;  // opcional, 'imagenUrl' o 'imageUrl'
+  final String name;
+  final double price;
+  final int stock;
+  final String category;
+  final bool disponible;
+
+  /// Si el producto (Burger/Sandwich) puede tener media orden de boneless
+  final bool tieneMediaBoneless;
+
+  /// Salsa específica para media boneless (solo aplica si tieneMediaBoneless = true)
+  final String? salsaMediaBoneless;
+
+  /// Lista de salsas disponibles (solo aplica si es producto tipo Boneless)
+  final List<String> salsasDisponibles;
 
   Product({
     required this.id,
     required this.name,
     required this.price,
+    required this.stock,
     required this.category,
     required this.disponible,
-    required this.stock,
-    this.imageUrl,
+    this.tieneMediaBoneless = false,
+    this.salsaMediaBoneless,
+    this.salsasDisponibles = const [],
   });
 
+  /// ✅ Convertir Product → Map para subir a Firebase
   Map<String, dynamic> toMap() {
     return {
-      'nombre': name,
-      'precio': price,
-      'categoria': category,
-      'disponible': disponible,
+      'name': name,
+      'price': price,
       'stock': stock,
-      if (imageUrl != null) 'imagenUrl': imageUrl,
+      'category': category,
+      'disponible': disponible,
+      'tieneMediaBoneless': tieneMediaBoneless,
+      'salsaMediaBoneless': salsaMediaBoneless,
+      'salsasDisponibles': salsasDisponibles,
     };
   }
 
+  /// ✅ Convertir Map (de Firebase) → Product
   factory Product.fromMap(String id, Map<String, dynamic> data) {
-    // Manejar nombres/formatos varios y evitar errores por nulls/tipos
-    final nombre = data['nombre'] ?? data['name'] ?? '';
-    final precioRaw = data['precio'] ?? data['price'] ?? 0;
-    final categoria = data['categoria'] ?? data['category'] ?? 'Sin categoría';
-    final disponibleRaw = data['disponible'] ?? data['available'] ?? true;
-    final stockRaw = data['stock'] ?? data['existencias'] ?? 0;
-    final imagen = data['imagenUrl'] ?? data['imageUrl'] ?? null;
-
-    double precio = 0.0;
-    if (precioRaw is num) precio = precioRaw.toDouble();
-    else if (precioRaw is String) precio = double.tryParse(precioRaw) ?? 0.0;
-
-    bool disponible = disponibleRaw is bool ? disponibleRaw : disponibleRaw.toString().toLowerCase() == 'true';
-
-    int stock = 0;
-    if (stockRaw is int) stock = stockRaw;
-    else if (stockRaw is num) stock = (stockRaw as num).toInt();
-    else if (stockRaw is String) stock = int.tryParse(stockRaw) ?? 0;
-
     return Product(
       id: id,
-      name: nombre,
-      price: precio,
-      category: categoria,
-      disponible: disponible,
-      stock: stock,
-      imageUrl: imagen,
+      name: data['name'] ?? data['nombre'] ?? '',
+      price: (data['price'] is int)
+          ? (data['price'] as int).toDouble()
+          : (data['price'] ?? 0.0).toDouble(),
+      stock: (data['stock'] is int)
+          ? data['stock']
+          : int.tryParse('${data['stock'] ?? 0}') ?? 0,
+      category: data['category'] ?? data['categoria'] ?? 'Otro',
+      disponible: data['disponible'] ?? true,
+      tieneMediaBoneless: data['tieneMediaBoneless'] ?? false,
+      salsaMediaBoneless: data['salsaMediaBoneless'],
+      salsasDisponibles: List<String>.from(data['salsasDisponibles'] ?? []),
+    );
+  }
+
+  /// ✅ Crear una copia modificada del producto
+  Product copyWith({
+    String? id,
+    String? name,
+    double? price,
+    int? stock,
+    String? category,
+    bool? disponible,
+    bool? tieneMediaBoneless,
+    String? salsaMediaBoneless,
+    List<String>? salsasDisponibles,
+  }) {
+    return Product(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      price: price ?? this.price,
+      stock: stock ?? this.stock,
+      category: category ?? this.category,
+      disponible: disponible ?? this.disponible,
+      tieneMediaBoneless: tieneMediaBoneless ?? this.tieneMediaBoneless,
+      salsaMediaBoneless: salsaMediaBoneless ?? this.salsaMediaBoneless,
+      salsasDisponibles: salsasDisponibles ?? this.salsasDisponibles,
     );
   }
 }

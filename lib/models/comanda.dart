@@ -1,5 +1,6 @@
 // lib/models/comanda.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'item_comanda.dart';
 
 class Comanda {
@@ -8,11 +9,12 @@ class Comanda {
   final String clientPhone;
   final String type; // 'comer_aqui', 'para_llevar', 'domicilio' (o similares)
   final String address;
+  final String addressCol;
   final String estado; // 'pendiente','en_preparacion','listo','entregado'
   final Map<String, dynamic> payment; // ejemplo: {'estado':'pendiente','metodo':'efectivo'}
   final DateTime? date;
   final double total;
-  final List<ItemComanda> details;
+  List<ItemComanda> details;
 
   Comanda({
     required this.id,
@@ -25,6 +27,7 @@ class Comanda {
     required this.date,
     required this.total,
     required this.details,
+    required this.addressCol,
   });
 
   Map<String, dynamic> toMap() {
@@ -32,6 +35,7 @@ class Comanda {
       'cliente': {'nombre': clientName, 'telefono': clientPhone},
       'tipo': type,
       'direccion': address,
+      'colonia' : addressCol,
       'estado': estado,
       'pago': payment,
       'fecha': date != null ? date!.toUtc() : FieldValue.serverTimestamp(),
@@ -73,6 +77,7 @@ class Comanda {
       clientPhone: clienteTelefono,
       type: (m['tipo'] ?? m['type'] ?? 'comer_aqui').toString(),
       address: (m['direccion'] ?? m['address'] ?? '').toString(),
+      addressCol: (m['colonia'] ?? m['address_col'] ?? '').toString(),
       estado: (m['estado'] ?? m['status'] ?? 'pendiente').toString(),
       payment: pago,
       date: fecha,

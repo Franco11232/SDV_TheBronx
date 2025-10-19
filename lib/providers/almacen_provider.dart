@@ -1,37 +1,25 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:svd_thebronx/models/product.dart';
+import '../models/product.dart';
+import '../services/product_service.dart';
 
 class AlmacenProvider extends ChangeNotifier {
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final ProductService _service = ProductService();
 
-  /// Stream de productos agrupados por categoría
-  Stream<Map<String, List<Product>>> streamProductosPorCategoria() {
-    return _db.collection('almacen').snapshots().map((snapshot) {
-      final productos = snapshot.docs
-          .map((doc) => Product.fromMap(doc.id, doc.data()))
-          .toList();
+  /// 🔹 Stream de productos en tiempo real
+  Stream<List<Product>> get productosStream => _service.getProducts();
 
-      final Map<String, List<Product>> agrupados = {};
-      for (var p in productos) {
-        agrupados.putIfAbsent(p.category, () => []).add(p);
-      }
-      return agrupados;
-    });
-  }
-
-  /// Crear producto
   Future<void> agregarProducto(Product product) async {
-    await _db.collection('almacen').add(product.toMap());
+    await _service.addProduct(product);
+    notifyListeners();
   }
 
-  /// Actualizar producto
-  Future<void> actualizarProducto(String id, Product product) async {
-    await _db.collection('almacen').doc(id).update(product.toMap());
+  Future<void> actualizarProducto(Product product) async {
+    await _service.updateProduct(product);
+    notifyListeners();
   }
 
-  /// Eliminar producto
   Future<void> eliminarProducto(String id) async {
-    await _db.collection('almacen').doc(id).delete();
+    await _service.deleteProduct(id);
+    notifyListeners();
   }
 }
