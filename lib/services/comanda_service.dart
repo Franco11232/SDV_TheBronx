@@ -1,29 +1,68 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:svd_thebronx/models/comanda.dart';
+import '../models/comanda.dart';
 
 class ComandaService {
-  final CollectionReference _col = FirebaseFirestore.instance.collection('comandas');
- 
-Future<void> crearComanda(Comanda c) async {
-    await _col.add({
-      'cliente': {'nombre': c.clientName, 'telefono': c.clientPhone},
-      'tipo': c.type,
-      'direccion': c.address,
-      'estado': c.estado,
-      'pago': c.payment,
-      'fecha': FieldValue.serverTimestamp(),
-      'total': c.total,
-      'detalles': c.details.map((item) => item.toMap()).toList(),
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
 
+  /// 🔹 Obtener todas las comandas activas (pendientes o en preparación)
+  Stream<List<Comanda>> getComandasActivas() {
+    return _db
+        .collection('comandas')
+        .where('estado', whereIn: ['pendiente', 'en_preparacion'])
+        .orderBy('date', descending: false)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs
+          .map((doc) => Comanda.fromMap(doc.id, doc.data()))
+          .toList();
     });
   }
-  Stream<List<Comanda>> streamComandas(String estado) => _col.where('estado', isEqualTo: estado).snapshots().map((s) => s.docs.map((d) =>
-      Comanda.fromMap(d.id, d.data() as Map<String, dynamic>)).toList());
 
-      Future<void>actualizarEstado(String id, String nuevoEstado) => _col.doc(id).update({'estado': nuevoEstado});
+  /// 🔹 Obtener historial de comandas (entregadas o canceladas)
+  Stream<List<Comanda>> getHistorial() {
+    return _db
+        .collection('comandas')
+        .where('estado', whereIn: ['entregado', 'cancelado'])
+        .orderBy('date', descending: true)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs
+          .map((doc) => Comanda.fromMap(doc.id, doc.data()))
+          .toList();
+    });
+  }
 
-      Future<List<Comanda>>obtenerComandasPagadas() async{
-        final snap = await _col.where('pago.method', isEqualTo: 'pagado').get();
-        return snap.docs.map((d) => Comanda.fromMap(d.id, d.data() as Map<String, dynamic>)).toList();
-      }
+  /// 🔹 Crear nueva comanda
+  Future<void> addComanda(Comanda comanda) async {
+    try {
+      await _db.collection('comandas').add(comanda.toMap());
+      print('✅ Comanda guardada correctamente');
+    } catch (e) {
+      print('❌ Error al guardar la comanda: $e');
+      rethrow;
+    }
+  }
+
+  /// 🔹 Actualizar estado de la comanda
+  Future<void> actualizarEstado(String id, String nuevoEstado) async {
+    try {
+      await _db.collection('comandas').doc(id).update({
+        'estado': nuevoEstado,
+        'ultimaActualizacion': FieldValue.serverTimestamp(),
+      });
+      print('🔄 Estado actualizado a $nuevoEstado');
+    } catch (e) {
+      print('❌ Error al actualizar estado: $e');
+    }
+  }
+
+  /// 🔹 Eliminar comanda
+  Future<void> eliminarComanda(String id) async {
+    try {
+      await _db.collection('comandas').doc(id).delete();
+      print('🗑️ Comanda eliminada correctamente');
+    } catch (e) {
+      print('❌ Error al eliminar comanda: $e');
+    }
+  }
 }

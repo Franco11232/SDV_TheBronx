@@ -59,7 +59,7 @@ class AdminDashboardScreen extends StatelessWidget {
   }
 }
 
-// Pantalla que muestra productos vendidos hoy para una categoría (puedes adaptarla según cómo guardes los detalles)
+// Pantalla que muestra productos vendidos hoy para una categoría
 class ProductosVendidosDetalleScreen extends StatelessWidget {
   final String categoria;
   const ProductosVendidosDetalleScreen({super.key, required this.categoria});

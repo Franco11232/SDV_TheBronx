@@ -1,88 +1,125 @@
-// lib/models/product.dart
 class Product {
-  final String id;
-  final String name;
-  final double price;
-  final int stock;
-  final String category;
-  final bool disponible;
+  String id;
+  String nombre;
+  String categoria;
+  double precio;
+  String descripcion;
+  String imagenUrl;
+  bool disponible;
 
-  /// Si el producto (Burger/Sandwich) puede tener media orden de boneless
-  final bool tieneMediaBoneless;
+  // 🔹 Campos para media orden
+  bool tieneMediaOrden;
+  double? precioMediaOrden;
 
-  /// Salsa específica para media boneless (solo aplica si tieneMediaBoneless = true)
-  final String? salsaMediaBoneless;
+  // 🔹 Campos para salsas
+  List<String> salsas;
+  String? salsaSeleccionada;
 
-  /// Lista de salsas disponibles (solo aplica si es producto tipo Boneless)
-  final List<String> salsasDisponibles;
+  // 🔹 Campos usados en comandas
+  bool mediaOrdenSeleccionada;
+  String? salsaComanda;
 
   Product({
-    required this.id,
-    required this.name,
-    required this.price,
-    required this.stock,
-    required this.category,
-    required this.disponible,
-    this.tieneMediaBoneless = false,
-    this.salsaMediaBoneless,
-    this.salsasDisponibles = const [],
+    this.id = '',
+    required this.nombre,
+    required this.categoria,
+    required this.precio,
+    this.descripcion = '',
+    this.imagenUrl = '',
+    this.disponible = true,
+    this.tieneMediaOrden = false,
+    this.precioMediaOrden,
+    this.salsas = const [],
+    this.salsaSeleccionada,
+    this.mediaOrdenSeleccionada = false,
+    this.salsaComanda,
   });
 
-  /// ✅ Convertir Product → Map para subir a Firebase
-  Map<String, dynamic> toMap() {
-    return {
-      'name': name,
-      'price': price,
-      'stock': stock,
-      'category': category,
-      'disponible': disponible,
-      'tieneMediaBoneless': tieneMediaBoneless,
-      'salsaMediaBoneless': salsaMediaBoneless,
-      'salsasDisponibles': salsasDisponibles,
-    };
-  }
-
-  /// ✅ Convertir Map (de Firebase) → Product
+  /// 🔹 Convierte un documento Firestore en un objeto Product
   factory Product.fromMap(String id, Map<String, dynamic> data) {
     return Product(
       id: id,
-      name: data['name'] ?? data['nombre'] ?? '',
-      price: (data['price'] is int)
-          ? (data['price'] as int).toDouble()
-          : (data['price'] ?? 0.0).toDouble(),
-      stock: (data['stock'] is int)
-          ? data['stock']
-          : int.tryParse('${data['stock'] ?? 0}') ?? 0,
-      category: data['category'] ?? data['categoria'] ?? 'Otro',
+      nombre: data['nombre'] ?? '',
+      categoria: data['categoria'] ?? '',
+      precio: (data['precio'] != null)
+          ? (data['precio'] is int
+          ? (data['precio'] as int).toDouble()
+          : (data['precio'] as num).toDouble())
+          : 0.0,
+      descripcion: data['descripcion'] ?? '',
+      imagenUrl: data['imagenUrl'] ?? '',
       disponible: data['disponible'] ?? true,
-      tieneMediaBoneless: data['tieneMediaBoneless'] ?? false,
-      salsaMediaBoneless: data['salsaMediaBoneless'],
-      salsasDisponibles: List<String>.from(data['salsasDisponibles'] ?? []),
+      tieneMediaOrden: data['tieneMediaOrden'] ?? false,
+      precioMediaOrden: (data['precioMediaOrden'] != null)
+          ? (data['precioMediaOrden'] is int
+          ? (data['precioMediaOrden'] as int).toDouble()
+          : (data['precioMediaOrden'] as num).toDouble())
+          : null,
+      salsas: (data['salsas'] != null)
+          ? List<String>.from(data['salsas'])
+          : [],
+      salsaSeleccionada: data['salsaSeleccionada'],
+      mediaOrdenSeleccionada: data['mediaOrdenSeleccionada'] ?? false,
+      salsaComanda: data['salsaComanda'],
     );
   }
 
-  /// ✅ Crear una copia modificada del producto
+  /// 🔹 Convierte el objeto Product a un mapa para guardar en Firestore
+  Map<String, dynamic> toMap() {
+    return {
+      'nombre': nombre,
+      'categoria': categoria,
+      'precio': precio,
+      'descripcion': descripcion,
+      'imagenUrl': imagenUrl,
+      'disponible': disponible,
+      'tieneMediaOrden': tieneMediaOrden,
+      'precioMediaOrden': precioMediaOrden,
+      'salsas': salsas,
+      'salsaSeleccionada': salsaSeleccionada,
+      'mediaOrdenSeleccionada': mediaOrdenSeleccionada,
+      'salsaComanda': salsaComanda,
+    };
+  }
+
   Product copyWith({
     String? id,
-    String? name,
-    double? price,
-    int? stock,
-    String? category,
+    String? nombre,
+    String? categoria,
+    double? precio,
+    String? descripcion,
+    String? imagenUrl,
     bool? disponible,
-    bool? tieneMediaBoneless,
-    String? salsaMediaBoneless,
-    List<String>? salsasDisponibles,
+    bool? tieneMediaOrden,
+    double? precioMediaOrden,
+    List<String>? salsas,
+    String? salsaSeleccionada,
+    bool? mediaOrdenSeleccionada,
+    String? salsaComanda,
   }) {
     return Product(
       id: id ?? this.id,
-      name: name ?? this.name,
-      price: price ?? this.price,
-      stock: stock ?? this.stock,
-      category: category ?? this.category,
+      nombre: nombre ?? this.nombre,
+      categoria: categoria ?? this.categoria,
+      precio: precio ?? this.precio,
+      descripcion: descripcion ?? this.descripcion,
+      imagenUrl: imagenUrl ?? this.imagenUrl,
       disponible: disponible ?? this.disponible,
-      tieneMediaBoneless: tieneMediaBoneless ?? this.tieneMediaBoneless,
-      salsaMediaBoneless: salsaMediaBoneless ?? this.salsaMediaBoneless,
-      salsasDisponibles: salsasDisponibles ?? this.salsasDisponibles,
+      tieneMediaOrden: tieneMediaOrden ?? this.tieneMediaOrden,
+      precioMediaOrden: precioMediaOrden ?? this.precioMediaOrden,
+      salsas: salsas ?? this.salsas,
+      salsaSeleccionada: salsaSeleccionada ?? this.salsaSeleccionada,
+      mediaOrdenSeleccionada:
+      mediaOrdenSeleccionada ?? this.mediaOrdenSeleccionada,
+      salsaComanda: salsaComanda ?? this.salsaComanda,
     );
+  }
+
+  double getPrecioTotal() {
+    double total = precio;
+    if (mediaOrdenSeleccionada && precioMediaOrden != null) {
+      total += precioMediaOrden!;
+    }
+    return total;
   }
 }

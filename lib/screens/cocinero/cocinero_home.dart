@@ -11,7 +11,7 @@ class CocineroHome extends StatelessWidget {
     final prov = Provider.of<ComandaProvider>(context, listen: false);
 
     return StreamBuilder<List<Comanda>>(
-      stream: prov.streamComandas(),
+      stream: prov.streamComandasActivas(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());

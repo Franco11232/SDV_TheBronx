@@ -17,16 +17,14 @@ class _NuevaComandaScreenState extends State<NuevaComandaScreen> {
   final _telefonoCtrl = TextEditingController();
   final _calleCtrl = TextEditingController();
   final _colCtrl = TextEditingController();
-
   String _tipo = 'Para llevar';
   bool _guardando = false;
 
-  // 🔢 Cálculo total dinámico
   double get total =>
-      widget.productosSeleccionados.fold(0, (sum, p) => sum + p.subTotal);
+      widget.productosSeleccionados.fold(0, (sum, p) => sum + (p.subTotal ?? 0));
 
   Future<void> _guardarComanda() async {
-    if (_nombreCtrl.text.isEmpty || _telefonoCtrl.text.isEmpty) {
+    if (_nombreCtrl.text.trim().isEmpty || _telefonoCtrl.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Ingrese nombre y teléfono del cliente')),
       );
@@ -34,7 +32,7 @@ class _NuevaComandaScreenState extends State<NuevaComandaScreen> {
     }
 
     if (_tipo == 'Domicilio' &&
-        (_calleCtrl.text.isEmpty || _colCtrl.text.isEmpty)) {
+        (_calleCtrl.text.trim().isEmpty || _colCtrl.text.trim().isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Ingrese la dirección para domicilio')),
       );
@@ -63,12 +61,13 @@ class _NuevaComandaScreenState extends State<NuevaComandaScreen> {
           .add(nueva.toMap());
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Comanda creada correctamente')),
+        const SnackBar(content: Text('✅ Comanda creada correctamente')),
       );
+
       Navigator.pop(context, true);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al crear comanda: $e')),
+        SnackBar(content: Text('❌ Error al crear comanda: $e')),
       );
     } finally {
       setState(() => _guardando = false);
@@ -88,32 +87,25 @@ class _NuevaComandaScreenState extends State<NuevaComandaScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Nueva Comanda')),
-      body: SingleChildScrollView(
+      body: Padding(
         padding: const EdgeInsets.all(12.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 🧍 Datos del cliente
             TextField(
               controller: _nombreCtrl,
-              decoration:
-              const InputDecoration(labelText: 'Nombre del cliente'),
+              decoration: const InputDecoration(labelText: 'Nombre del cliente'),
             ),
             TextField(
               controller: _telefonoCtrl,
               decoration: const InputDecoration(labelText: 'Teléfono'),
               keyboardType: TextInputType.phone,
             ),
-            const SizedBox(height: 10),
             DropdownButtonFormField<String>(
               value: _tipo,
               items: const [
-                DropdownMenuItem(
-                    value: 'Para llevar', child: Text('Para llevar')),
-                DropdownMenuItem(
-                    value: 'Domicilio', child: Text('Domicilio')),
-                DropdownMenuItem(
-                    value: 'Comer aqui', child: Text('Comer aquí')),
+                DropdownMenuItem(value: 'Para llevar', child: Text('Para llevar')),
+                DropdownMenuItem(value: 'Domicilio', child: Text('Domicilio')),
+                DropdownMenuItem(value: 'Comer aqui', child: Text('Comer aquí')),
               ],
               onChanged: (v) => setState(() => _tipo = v ?? 'Para llevar'),
               decoration: const InputDecoration(labelText: 'Tipo de comanda'),
@@ -128,59 +120,17 @@ class _NuevaComandaScreenState extends State<NuevaComandaScreen> {
                 decoration: const InputDecoration(labelText: 'Colonia'),
               ),
             ],
-            const SizedBox(height: 10),
             const Divider(),
-
-            // 🧾 Lista de productos
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: widget.productosSeleccionados.length,
-              itemBuilder: (context, index) {
-                final item = widget.productosSeleccionados[index];
-                return Card(
-                  margin:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  elevation: 2,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                  child: ListTile(
-                    leading: const Icon(Icons.fastfood, color: Colors.brown),
-                    title: Text(
-                      item.nombre,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 16),
-                    ),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Cantidad: ${item.cantidad}'),
-                        Text(
-                            'Precio unitario: \$${item.priceUnit.toStringAsFixed(2)}'),
-                        if (item.llevaMediaOrdenBones)
-                          Text(
-                            '➕ Media orden de Bones (+\$${item.precioMediaOrden?.toStringAsFixed(2) ?? "75.00"})',
-                            style: const TextStyle(color: Colors.brown),
-                          ),
-                        if (item.salsaSeleccionada != null &&
-                            item.salsaSeleccionada!.isNotEmpty)
-                          Text('Salsa: ${item.salsaSeleccionada}'),
-                      ],
-                    ),
-                    trailing: Text(
-                      '\$${item.subTotal.toStringAsFixed(2)}',
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green,
-                          fontSize: 16),
-                    ),
-                  ),
-                );
-              },
+            Expanded(
+              child: ListView.builder(
+                itemCount: widget.productosSeleccionados.length,
+                itemBuilder: (context, index) {
+                  final item = widget.productosSeleccionados[index];
+                  return _buildProductoCard(item, index);
+                },
+              ),
             ),
             const Divider(),
-
-            // 💰 Total
             Padding(
               padding: const EdgeInsets.all(16),
               child: Row(
@@ -188,32 +138,95 @@ class _NuevaComandaScreenState extends State<NuevaComandaScreen> {
                 children: [
                   const Text(
                     'Total:',
-                    style:
-                    TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   Text(
                     '\$${total.toStringAsFixed(2)}',
                     style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green),
+                        fontSize: 20, fontWeight: FontWeight.bold, color: Colors.green),
                   ),
                 ],
               ),
             ),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.save),
+              label: Text(_guardando ? 'Guardando...' : 'Guardar Comanda'),
+              onPressed: _guardando ? null : _guardarComanda,
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size.fromHeight(50),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-            // 💾 Botón Guardar
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                icon: const Icon(Icons.save),
-                label: Text(_guardando
-                    ? 'Guardando...'
-                    : 'Guardar Comanda'),
-                onPressed: _guardando ? null : _guardarComanda,
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size.fromHeight(50),
+  Widget _buildProductoCard(ItemComanda item, int index) {
+    final List<String> salsasDisponibles = [
+      'BBQ',
+      'Buffalo',
+      'Mango Habanero',
+      'Lemon Pepper',
+      'Parmesano',
+      'Chipotle',
+    ];
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(10.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(item.nombre,
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            Text('Cantidad: ${item.cantidad}'),
+            Text('Precio unitario: \$${item.priceUnit.toStringAsFixed(2)}'),
+
+            // ✅ Media orden Boneless
+            Row(
+              children: [
+                Checkbox(
+                  value: item.llevaMediaOrdenBones ?? false,
+                  onChanged: (v) {
+                    setState(() {
+                      item.llevaMediaOrdenBones = v ?? false;
+                      final base = item.priceUnit * item.cantidad;
+                      final extra = item.llevaMediaOrdenBones ? 75.0 : 0.0;
+                      item.subTotal = base + extra;
+                    });
+                  },
                 ),
+                const Text('Agregar media orden de Boneless (+\$75)'),
+              ],
+            ),
+
+            // ✅ Selector de salsas
+            DropdownButtonFormField<String>(
+              value: (item.salsasSeleccionadas?.isNotEmpty ?? false)
+                  ? item.salsasSeleccionadas!.first
+                  : null,
+              hint: const Text('Seleccionar salsa'),
+              items: salsasDisponibles
+                  .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                  .toList(),
+              onChanged: (v) {
+                setState(() {
+                  item.salsasSeleccionadas = v != null ? [v] : [];
+                });
+              },
+            ),
+
+            const SizedBox(height: 6),
+            Align(
+              alignment: Alignment.centerRight,
+              child: Text(
+                'Subtotal: \$${item.subTotal.toStringAsFixed(2)}',
+                style: const TextStyle(
+                    fontWeight: FontWeight.bold, color: Colors.green),
               ),
             ),
           ],

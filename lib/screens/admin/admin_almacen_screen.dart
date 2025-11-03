@@ -20,45 +20,78 @@ class AdminAlmacenScreen extends StatelessWidget {
       body: StreamBuilder<List<Product>>(
         stream: almacenProvider.productosStream,
         builder: (context, snapshot) {
-          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          }
+
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(child: Text('No hay productos disponibles.'));
+          }
 
           final productos = snapshot.data!;
-          final categorias = <String>{...productos.map((p) => p.category)}.toList();
+          final categorias = productos.map((p) => p.categoria).toSet().toList();
 
           return ListView.builder(
             itemCount: categorias.length,
             itemBuilder: (context, i) {
               final categoria = categorias[i];
-              final productosCategoria = productos.where((p) => p.category == categoria).toList();
+              final productosCategoria =
+              productos.where((p) => p.categoria == categoria).toList();
 
-              return ExpansionTile(
-                title: Text(categoria.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.bold)),
-                children: productosCategoria.map((p) {
-                  String stockLabel = categoria == 'Sandwich' ? '${p.stock} kg' : '${p.stock} uds';
-                  return ListTile(
-                    title: Text(p.name),
-                    subtitle: Text('Stock: $stockLabel | \$${p.price.toStringAsFixed(2)}'),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.edit, color: Colors.blue),
-                          onPressed: () => showDialog(
-                            context: context,
-                            builder: (_) => ProductDialog(
-                              product: p,
-                              onSave: (nuevo) => almacenProvider.actualizarProducto(nuevo),
+              return Card(
+                margin: const EdgeInsets.all(10),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                elevation: 3,
+                child: ExpansionTile(
+                  title: Text(
+                    categoria.isNotEmpty ? categoria.toUpperCase() : "SIN CATEGORÍA",
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  children: productosCategoria.isEmpty
+                      ? [
+                    const Padding(
+                      padding: EdgeInsets.all(10),
+                      child: Text('No hay productos en esta categoría.'),
+                    ),
+                  ]
+                      : productosCategoria.map((p) {
+                    return ListTile(
+                      title: Text(p.nombre),
+                      subtitle: Text(
+                        'Stock: | \$${p.precio.toStringAsFixed(2)}',
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.edit, color: Colors.blue),
+                            onPressed: () => showDialog(
+                              context: context,
+                              builder: (_) => ProductDialog(
+                                product: p,
+                                categoriasStream: almacenProvider.categoriasStream,
+                                salsasStream: almacenProvider.salsasStream,
+                                onSave: (nuevo) async {
+                                  await almacenProvider.actualizarProducto(nuevo);
+                                },
+                              ),
                             ),
                           ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.red),
-                          onPressed: () => almacenProvider.eliminarProducto(p.id),
-                        ),
-                      ],
-                    ),
-                  );
-                }).toList(),
+                          IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.red),
+                            onPressed: () async {
+                              await almacenProvider.eliminarProducto(p.id);
+                            },
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
               );
             },
           );
@@ -70,7 +103,11 @@ class AdminAlmacenScreen extends StatelessWidget {
         onPressed: () => showDialog(
           context: context,
           builder: (_) => ProductDialog(
-            onSave: (nuevo) => almacenProvider.agregarProducto(nuevo),
+            categoriasStream: almacenProvider.categoriasStream,
+            salsasStream: almacenProvider.salsasStream,
+            onSave: (nuevo) async {
+              await almacenProvider.agregarProducto(nuevo);
+            },
           ),
         ),
       ),

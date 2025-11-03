@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import '../../models/product.dart';
-import '../../providers/comanda_provider.dart';
-import '../../services/product_service.dart';
-import 'nueva_comanda_screen.dart';
+import '../../models/salsa.dart';
 import '../../models/item_comanda.dart';
+import '../../providers/comanda_provider.dart';
+import 'nueva_comanda_screen.dart';
 
 class CajeroHome extends StatefulWidget {
   const CajeroHome({super.key});
@@ -14,188 +15,238 @@ class CajeroHome extends StatefulWidget {
 }
 
 class _CajeroHomeState extends State<CajeroHome> {
-  String selectedCategory = 'Todos';
-  String searchQuery = '';
-  final ProductService _ps = ProductService();
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
+
+  Stream<List<Product>> get productosStream => _db
+      .collection('productos')
+      .snapshots()
+      .map((snap) => snap.docs
+      .map((d) => Product.fromMap(d.id, d.data() as Map<String, dynamic>))
+      .toList());
+
+  Stream<List<Salsa>> get salsasStream => _db
+      .collection('salsas')
+      .snapshots()
+      .map((snap) => snap.docs
+      .map((d) => Salsa.fromMap(d.id, d.data() as Map<String, dynamic>))
+      .toList());
+
+  Future<void> _agregarProducto(Product producto, List<Salsa> salsasDisponibles) async {
+    int cantidad = 1;
+    bool llevaMediaOrdenBones = false;
+    String? salsaSeleccionada;
+    const double precioMediaOrden = 75.0;
+
+    await showDialog(
+      context: context,
+      builder: (_) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Text('Agregar ${producto.nombre}'),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 🔹 Cantidad
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.remove_circle_outline),
+                      onPressed: () {
+                        if (cantidad > 1) setState(() => cantidad--);
+                      },
+                    ),
+                    Text('$cantidad', style: const TextStyle(fontSize: 18)),
+                    IconButton(
+                      icon: const Icon(Icons.add_circle_outline),
+                      onPressed: () => setState(() => cantidad++),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+
+                // 🔹 Selección de salsa (si el producto tiene salsas)
+                if (producto.salsas.isNotEmpty)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Selecciona salsa:',
+                          style: TextStyle(fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 5),
+                      Wrap(
+                        spacing: 8,
+                        children: salsasDisponibles
+                            .where((s) => producto.salsas.contains(s.nombre))
+                            .map((s) {
+                          final selected = salsaSeleccionada == s.nombre;
+                          return ChoiceChip(
+                            label: Text(s.nombre),
+                            selected: selected,
+                            selectedColor: Colors.green.shade300,
+                            onSelected: (v) {
+                              setState(() {
+                                salsaSeleccionada = v ? s.nombre : null;
+                              });
+                            },
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                  ),
+
+                const SizedBox(height: 10),
+
+                // 🔹 Media orden de Bones (solo si aplica)
+                if (producto.categoria.toLowerCase().contains('burger') ||
+                    producto.categoria.toLowerCase().contains('sandwich'))
+                  CheckboxListTile(
+                    title: const Text('Agregar media orden de Bones (+\$75.00)'),
+                    value: llevaMediaOrdenBones,
+                    onChanged: (v) => setState(() => llevaMediaOrdenBones = v ?? false),
+                  ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+              onPressed: () {
+                final provider = Provider.of<ComandaProvider>(context, listen: false);
+
+                for (int i = 0; i < cantidad; i++) {
+                  provider.agregarProducto(
+                    producto,
+                    esMediaOrden: llevaMediaOrdenBones,
+                    salsa: salsaSeleccionada,
+                  );
+                }
+
+                Navigator.pop(context);
+              },
+              child: const Text('Agregar'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _finalizarComanda() async {
+    final provider = Provider.of<ComandaProvider>(context, listen: false);
+    if (provider.productos.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Seleccione al menos un producto')),
+      );
+      return;
+    }
+
+    final resultado = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => NuevaComandaScreen(
+          productosSeleccionados: provider.productos,
+        ),
+      ),
+    );
+
+    if (resultado == true) provider.limpiarComanda();
+  }
 
   @override
   Widget build(BuildContext context) {
     final comandaProvider = Provider.of<ComandaProvider>(context);
 
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
-        title: _buildSearchBar(),
-        backgroundColor: Colors.brown.shade400,
+        title: const Text('Cajero - Selección de Productos'),
+        backgroundColor: Colors.green,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.receipt_long),
+            onPressed: _finalizarComanda,
+          )
+        ],
       ),
       body: StreamBuilder<List<Product>>(
-        stream: _ps.getProducts(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+        stream: productosStream,
+        builder: (context, snapshotProd) {
+          if (!snapshotProd.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (snapshot.hasError) {
-            return Center(
-                child: Text('Error al cargar productos: ${snapshot.error}'));
-          }
+          final productos = snapshotProd.data!;
+          return StreamBuilder<List<Salsa>>(
+            stream: salsasStream,
+            builder: (context, snapshotSalsas) {
+              if (!snapshotSalsas.hasData) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              final salsas = snapshotSalsas.data!;
 
-          final productos = snapshot.data!
-              .where((p) =>
-          (selectedCategory == 'Todos' || p.category == selectedCategory) &&
-              p.name.toLowerCase().contains(searchQuery.toLowerCase()))
-              .toList();
-
-          final categorias = <String>{
-            'Todos',
-            ...snapshot.data!.map((p) => p.category)
-          }.toList();
-
-          return Column(
-            children: [
-              _buildCategoryChips(categorias),
-              Expanded(
-                child: productos.isEmpty
-                    ? const Center(child: Text('No hay productos disponibles'))
-                    : GridView.builder(
-                  padding: const EdgeInsets.all(12),
-                  gridDelegate:
-                  const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    mainAxisSpacing: 12,
-                    crossAxisSpacing: 12,
-                    childAspectRatio: 0.8,
-                  ),
-                  itemCount: productos.length,
-                  itemBuilder: (context, index) {
-                    final producto = productos[index];
-                    return _buildProductCard(producto, comandaProvider);
-                  },
+              return GridView.builder(
+                padding: const EdgeInsets.all(12),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  childAspectRatio: 3 / 2,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
                 ),
-              ),
-            ],
+                itemCount: productos.length,
+                itemBuilder: (context, index) {
+                  final p = productos[index];
+                  return GestureDetector(
+                    onTap: () => _agregarProducto(p, salsas),
+                    child: Card(
+                      elevation: 4,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(10),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              p.nombre,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 16),
+                            ),
+                            const SizedBox(height: 5),
+                            Text(
+                              '\$${p.precio.toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                  color: Colors.green, fontSize: 16),
+                            ),
+                            if (p.categoria.isNotEmpty)
+                              Text(
+                                p.categoria,
+                                style: const TextStyle(
+                                    fontSize: 13, color: Colors.grey),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
           );
         },
       ),
-      floatingActionButton: comandaProvider.productos.isEmpty
-          ? null
-          : FloatingActionButton.extended(
+      floatingActionButton: comandaProvider.productos.isNotEmpty
+          ? FloatingActionButton.extended(
         backgroundColor: Colors.green,
-        icon: const Icon(Icons.receipt_long),
-        label: Text(
-            'Ver Comanda (\$${comandaProvider.total.toStringAsFixed(2)})'),
-        onPressed: () async {
-          final created = await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => NuevaComandaScreen(
-                productosSeleccionados:
-                List.from(comandaProvider.productos),
-              ),
-            ),
-          );
-          if (created == true) {
-            comandaProvider.clearComanda();
-          }
-        },
-      ),
-    );
-  }
-
-  Widget _buildSearchBar() {
-    return Container(
-      height: 42,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: TextField(
-        decoration: const InputDecoration(
-          hintText: "Buscar producto...",
-          border: InputBorder.none,
-          prefixIcon: Icon(Icons.search),
-        ),
-        onChanged: (value) => setState(() => searchQuery = value),
-      ),
-    );
-  }
-
-  Widget _buildCategoryChips(List<String> categorias) {
-    return SizedBox(
-      height: 50,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-        itemCount: categorias.length,
-        itemBuilder: (context, index) {
-          final categoria = categorias[index];
-          final isSelected = categoria == selectedCategory;
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6),
-            child: ChoiceChip(
-              label: Text(categoria),
-              selected: isSelected,
-              selectedColor: Colors.brown.shade300,
-              backgroundColor: Colors.grey.shade300,
-              labelStyle:
-              TextStyle(color: isSelected ? Colors.white : Colors.black),
-              onSelected: (_) => setState(() => selectedCategory = categoria),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildProductCard(Product producto, ComandaProvider comandaProvider) {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      elevation: 4,
-      child: Padding(
-        padding: const EdgeInsets.all(10),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Image.network(
-                fit: BoxFit.cover,
-                 Icon(Icons.fastfood, size: 60) as String,
-              ),
-            ),
-            Text(
-              producto.name,
-              style:
-              const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            Text(
-              '\$${producto.price.toStringAsFixed(2)}',
-              style: TextStyle(
-                  color: Colors.brown.shade700, fontWeight: FontWeight.w600),
-            ),
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.brown.shade400,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-              ),
-              onPressed: () {
-                comandaProvider.agregarProducto(
-                  ItemComanda(
-                    productId: producto.id,
-                    nombre: producto.name,
-                    cantidad: 1,
-                    priceUnit: producto.price,
-                  ),
-                );
-              },
-              icon: const Icon(Icons.add_shopping_cart),
-              label: const Text("Agregar"),
-            ),
-          ],
-        ),
-      ),
+        onPressed: _finalizarComanda,
+        icon: const Icon(Icons.check),
+        label: const Text('Finalizar'),
+      )
+          : null,
     );
   }
 }

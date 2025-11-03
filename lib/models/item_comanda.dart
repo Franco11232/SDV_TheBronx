@@ -1,64 +1,88 @@
-// lib/models/item_comanda.dart
 class ItemComanda {
-  final String productId;
-  final String nombre;
-  final int cantidad;
-  final double priceUnit;
-  final double subTotal;
+  String idProducto;
+  String nombre;
+  int cantidad;
+  double priceUnit;
+  double subTotal;
 
-  // campos opcionales
-  final bool llevaMediaOrdenBones;
-  final String? salsaSeleccionada;
-  final double? precioMediaOrden; // normalmente 75
+  // Extensiones extra
+  bool llevaMediaOrdenBones; // Si el cliente pidió media orden
+  double? precioMediaOrden; // Precio adicional
+  String? salsaSeleccionada; // Salsa principal elegida
+  List<String>? salsasSeleccionadas; // Salsas disponibles
 
   ItemComanda({
-    required this.productId,
+    required this.idProducto,
     required this.nombre,
     required this.cantidad,
     required this.priceUnit,
+    required this.subTotal,
     this.llevaMediaOrdenBones = false,
-    this.salsaSeleccionada,
     this.precioMediaOrden,
-  }) : subTotal = (cantidad * priceUnit) +
-      ((llevaMediaOrdenBones && precioMediaOrden != null)
-          ? precioMediaOrden
-          : 0);
+    this.salsaSeleccionada,
+    this.salsasSeleccionadas,
+  });
 
-  Map<String, dynamic> toMap() => {
-    'productoId': productId,
-    'nombre': nombre,
-    'cantidad': cantidad,
-    'precio_unit': priceUnit,
-    'sub_total': subTotal,
-    'llevaMediaOrdenBones': llevaMediaOrdenBones,
-    'salsaSeleccionada': salsaSeleccionada,
-    'precioMediaOrden': precioMediaOrden,
-  };
-
-  factory ItemComanda.fromMap(Map<String, dynamic> m) {
-    final productId = m['productoId'] ?? m['productId'] ?? '';
-    final nombre = m['nombre'] ?? m['name'] ?? '';
-    final cantidadRaw = m['cantidad'] ?? m['qty'] ?? 0;
-    final precioRaw = m['precio_unit'] ?? m['priceUnit'] ?? 0;
-
-    int cantidad = 0;
-    if (cantidadRaw is int) cantidad = cantidadRaw;
-    else if (cantidadRaw is num) cantidad = (cantidadRaw as num).toInt();
-    else if (cantidadRaw is String) cantidad = int.tryParse(cantidadRaw) ?? 0;
-
-    double priceUnit = 0.0;
-    if (precioRaw is num) priceUnit = (precioRaw as num).toDouble();
-    else if (precioRaw is String) priceUnit = double.tryParse(precioRaw) ?? 0.0;
-
+  /// 🔹 Firestore → Objeto
+  factory ItemComanda.fromMap(Map<String, dynamic> data) {
     return ItemComanda(
-      productId: productId,
-      nombre: nombre,
-      cantidad: cantidad,
-      priceUnit: priceUnit,
-      llevaMediaOrdenBones: m['llevaMediaOrdenBones'] ?? false,
-      salsaSeleccionada: m['salsaSeleccionada'],
-      precioMediaOrden:
-      (m['precioMediaOrden'] is num) ? (m['precioMediaOrden'] as num).toDouble() : null,
+      idProducto: data['idProducto'] ?? '',
+      nombre: data['nombre'] ?? '',
+      cantidad: data['cantidad'] ?? 0,
+      priceUnit: (data['priceUnit'] is int)
+          ? (data['priceUnit'] as int).toDouble()
+          : (data['priceUnit'] ?? 0.0),
+      subTotal: (data['subTotal'] is int)
+          ? (data['subTotal'] as int).toDouble()
+          : (data['subTotal'] ?? 0.0),
+      llevaMediaOrdenBones: data['llevaMediaOrdenBones'] ?? false,
+      precioMediaOrden: (data['precioMediaOrden'] is int)
+          ? (data['precioMediaOrden'] as int).toDouble()
+          : data['precioMediaOrden'],
+      salsaSeleccionada: data['salsaSeleccionada'],
+      salsasSeleccionadas: data['salsasSeleccionadas'] != null
+          ? List<String>.from(data['salsasSeleccionadas'])
+          : [],
+    );
+  }
+
+  /// 🔹 Objeto → Firestore
+  Map<String, dynamic> toMap() {
+    return {
+      'idProducto': idProducto,
+      'nombre': nombre,
+      'cantidad': cantidad,
+      'priceUnit': priceUnit,
+      'subTotal': subTotal,
+      'llevaMediaOrdenBones': llevaMediaOrdenBones,
+      'precioMediaOrden': precioMediaOrden,
+      'salsaSeleccionada': salsaSeleccionada,
+      'salsasSeleccionadas': salsasSeleccionadas ?? [],
+    };
+  }
+
+  /// 🔹 Crea una copia modificada (útil para actualizar cantidad o salsa)
+  ItemComanda copyWith({
+    String? idProducto,
+    String? nombre,
+    int? cantidad,
+    double? priceUnit,
+    double? subTotal,
+    bool? llevaMediaOrdenBones,
+    double? precioMediaOrden,
+    String? salsaSeleccionada,
+    List<String>? salsasSeleccionadas,
+  }) {
+    return ItemComanda(
+      idProducto: idProducto ?? this.idProducto,
+      nombre: nombre ?? this.nombre,
+      cantidad: cantidad ?? this.cantidad,
+      priceUnit: priceUnit ?? this.priceUnit,
+      subTotal: subTotal ?? this.subTotal,
+      llevaMediaOrdenBones: llevaMediaOrdenBones ?? this.llevaMediaOrdenBones,
+      precioMediaOrden: precioMediaOrden ?? this.precioMediaOrden,
+      salsaSeleccionada: salsaSeleccionada ?? this.salsaSeleccionada,
+      salsasSeleccionadas: salsasSeleccionadas ?? this.salsasSeleccionadas,
     );
   }
 }
