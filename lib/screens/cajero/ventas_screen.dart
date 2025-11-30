@@ -35,7 +35,7 @@ class _VentasScreenState extends State<VentasScreen> {
     final Map<String, double> porProducto = {};
 
     for (var doc in snapshot.docs) {
-      final data = doc.data() as Map<String, dynamic>;
+      final data = doc.data();
       final comanda = Comanda.fromMap(doc.id, data);
       totalDia += comanda.total;
       for (var item in comanda.details) {

@@ -42,8 +42,11 @@ class _SalsaDialogState extends State<SalsaDialog> {
             final nombre = _nombreCtrl.text.trim();
             if (nombre.isEmpty) return;
             final s = Salsa(id: widget.salsa?.id ?? '', nombre: nombre, disponible: _disponible);
-            if (widget.salsa == null) await almacen.agregarSalsa(s);
-            else await almacen.actualizarSalsa(s);
+            if (widget.salsa == null) {
+              await almacen.agregarSalsa(s);
+            } else {
+              await almacen.actualizarSalsa(s);
+            }
             Navigator.pop(context);
           },
           child: const Text('Guardar'),

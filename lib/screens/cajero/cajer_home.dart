@@ -3,7 +3,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import '../../models/product.dart';
 import '../../models/salsa.dart';
-import '../../models/item_comanda.dart';
 import '../../providers/comanda_provider.dart';
 import 'nueva_comanda_screen.dart';
 
@@ -21,14 +20,14 @@ class _CajeroHomeState extends State<CajeroHome> {
       .collection('productos')
       .snapshots()
       .map((snap) => snap.docs
-      .map((d) => Product.fromMap(d.id, d.data() as Map<String, dynamic>))
+      .map((d) => Product.fromMap(d.id, d.data()))
       .toList());
 
   Stream<List<Salsa>> get salsasStream => _db
       .collection('salsas')
       .snapshots()
       .map((snap) => snap.docs
-      .map((d) => Salsa.fromMap(d.id, d.data() as Map<String, dynamic>))
+      .map((d) => Salsa.fromMap(d.id, d.data()))
       .toList());
 
   Future<void> _agregarProducto(Product producto, List<Salsa> salsasDisponibles) async {
@@ -41,7 +40,7 @@ class _CajeroHomeState extends State<CajeroHome> {
       context: context,
       builder: (_) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
-          title: Text('Agregar ${producto.nombre}'),
+          title: Text('Agregar ${producto.name}'),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
           content: SingleChildScrollView(
             child: Column(
@@ -67,7 +66,7 @@ class _CajeroHomeState extends State<CajeroHome> {
                 const SizedBox(height: 10),
 
                 // 🔹 Selección de salsa (si el producto tiene salsas)
-                if (producto.salsas.isNotEmpty)
+                if (producto.salsasDisponibles.isNotEmpty)
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -77,7 +76,7 @@ class _CajeroHomeState extends State<CajeroHome> {
                       Wrap(
                         spacing: 8,
                         children: salsasDisponibles
-                            .where((s) => producto.salsas.contains(s.nombre))
+                            .where((s) => producto.salsasDisponibles.contains(s.nombre))
                             .map((s) {
                           final selected = salsaSeleccionada == s.nombre;
                           return ChoiceChip(
@@ -98,8 +97,8 @@ class _CajeroHomeState extends State<CajeroHome> {
                 const SizedBox(height: 10),
 
                 // 🔹 Media orden de Bones (solo si aplica)
-                if (producto.categoria.toLowerCase().contains('burger') ||
-                    producto.categoria.toLowerCase().contains('sandwich'))
+                if (producto.category.toLowerCase().contains('burger') ||
+                    producto.category.toLowerCase().contains('sandwich'))
                   CheckboxListTile(
                     title: const Text('Agregar media orden de Bones (+\$75.00)'),
                     value: llevaMediaOrdenBones,
@@ -211,20 +210,20 @@ class _CajeroHomeState extends State<CajeroHome> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              p.nombre,
+                              p.name,
                               textAlign: TextAlign.center,
                               style: const TextStyle(
                                   fontWeight: FontWeight.bold, fontSize: 16),
                             ),
                             const SizedBox(height: 5),
                             Text(
-                              '\$${p.precio.toStringAsFixed(2)}',
+                              '\$${p.price.toStringAsFixed(2)}',
                               style: const TextStyle(
                                   color: Colors.green, fontSize: 16),
                             ),
-                            if (p.categoria.isNotEmpty)
+                            if (p.category.isNotEmpty)
                               Text(
-                                p.categoria,
+                                p.category,
                                 style: const TextStyle(
                                     fontSize: 13, color: Colors.grey),
                               ),

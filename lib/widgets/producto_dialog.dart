@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '/models/product.dart';
-import '/models/categoria.dart';
-import '/models/salsa.dart';
+import '../models/product.dart';
+import '../models/categoria.dart';
+import '../models/salsa.dart';
 
 class ProductDialog extends StatefulWidget {
   final Product? product;
@@ -22,51 +22,69 @@ class ProductDialog extends StatefulWidget {
 }
 
 class _ProductDialogState extends State<ProductDialog> {
-  late TextEditingController _nombreController;
-  late TextEditingController _precioController;
-  late TextEditingController _precioMediaController;
-  late TextEditingController _descripcionController;
-  late TextEditingController _imagenController;
+  // Corregido: controladores para los campos del modelo Product
+  late TextEditingController _nameController;
+  late TextEditingController _priceController;
+  late TextEditingController _stockController;
+  late TextEditingController _salsaMediaBonelessController;
 
   late bool _disponible;
-  late bool _tieneMediaOrden;
-  String? _categoriaSeleccionada;
-  List<String> _salsasSeleccionadas = [];
+  late bool _tieneMediaBoneless;
+  String? _categorySeleccionado;
+  List<String> _salsasDisponiblesSeleccionadas = [];
 
   @override
   void initState() {
     super.initState();
     final p = widget.product;
-    _nombreController = TextEditingController(text: p?.nombre ?? '');
-    _precioController = TextEditingController(text: p?.precio.toString() ?? '');
-    _precioMediaController =
-        TextEditingController(text: p?.precioMediaOrden?.toString() ?? '');
-    _descripcionController = TextEditingController(text: p?.descripcion ?? '');
-    _imagenController = TextEditingController(text: p?.imagenUrl ?? '');
+    // Corregido: usar 'name' en lugar de 'nombre'
+    _nameController = TextEditingController(text: p?.name ?? '');
+    // Corregido: usar 'price' en lugar de 'precio'
+    _priceController = TextEditingController(text: p?.price.toString() ?? '');
+    // Corregido: añadir 'stock'
+    _stockController = TextEditingController(text: p?.stock.toString() ?? '');
+    // Corregido: usar 'salsaMediaBoneless' en lugar de 'precioMediaOrden'
+    _salsaMediaBonelessController =
+        TextEditingController(text: p?.salsaMediaBoneless ?? '');
+
     _disponible = p?.disponible ?? true;
-    _tieneMediaOrden = p?.tieneMediaOrden ?? false;
-    _categoriaSeleccionada = p?.categoria;
-    _salsasSeleccionadas = List<String>.from(p?.salsas ?? []);
+    // Corregido: usar 'tieneMediaBoneless' en lugar de 'tieneMediaOrden'
+    _tieneMediaBoneless = p?.tieneMediaBoneless ?? false;
+    // Corregido: usar 'category' en lugar de 'categoria'
+    _categorySeleccionado = p?.category;
+    // Corregido: usar 'salsasDisponibles' en lugar de 'salsas'
+    _salsasDisponiblesSeleccionadas =
+        List<String>.from(p?.salsasDisponibles ?? []);
   }
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(widget.product == null ? 'Agregar Producto' : 'Editar Producto'),
+      title:
+          Text(widget.product == null ? 'Agregar Producto' : 'Editar Producto'),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
-              controller: _nombreController,
+              // Corregido: usar _nameController
+              controller: _nameController,
               decoration: const InputDecoration(labelText: 'Nombre'),
             ),
             const SizedBox(height: 10),
             TextField(
-              controller: _precioController,
+              // Corregido: usar _priceController
+              controller: _priceController,
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(labelText: 'Precio'),
+            ),
+            const SizedBox(height: 10),
+            // Corregido: añadir campo para stock
+            TextField(
+              controller: _stockController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'Stock (Kg/Uds)'),
             ),
             const SizedBox(height: 10),
             StreamBuilder<List<Categoria>>(
@@ -78,13 +96,16 @@ class _ProductDialogState extends State<ProductDialog> {
                   return const Text('No hay categorías disponibles');
                 }
                 return DropdownButtonFormField<String>(
-                  value: _categoriaSeleccionada ?? categorias.first.nombre,
+                  // Corregido: usar _categorySeleccionado
+                  value: _categorySeleccionado,
+                  hint: const Text('Seleccione una categoría'),
                   decoration: const InputDecoration(labelText: 'Categoría'),
                   items: categorias
                       .map((c) =>
-                      DropdownMenuItem(value: c.nombre, child: Text(c.nombre)))
+                          DropdownMenuItem(value: c.nombre, child: Text(c.nombre)))
                       .toList(),
-                  onChanged: (val) => setState(() => _categoriaSeleccionada = val),
+                  onChanged: (val) =>
+                      setState(() => _categorySeleccionado = val),
                 );
               },
             ),
@@ -92,21 +113,22 @@ class _ProductDialogState extends State<ProductDialog> {
             SwitchListTile(
               title: const Text('Disponible'),
               value: _disponible,
-              activeColor: Colors.green,
+              activeThumbColor: Colors.green,
               onChanged: (v) => setState(() => _disponible = v),
             ),
             const Divider(),
+            // Corregido: Texto y valor para media orden de boneless
             CheckboxListTile(
-              title: const Text('Tiene media orden'),
-              value: _tieneMediaOrden,
-              onChanged: (v) => setState(() => _tieneMediaOrden = v ?? false),
+              title: const Text('Tiene media orden de boneless'),
+              value: _tieneMediaBoneless,
+              onChanged: (v) => setState(() => _tieneMediaBoneless = v ?? false),
             ),
-            if (_tieneMediaOrden)
+            // Corregido: campo para la salsa de la media orden
+            if (_tieneMediaBoneless)
               TextField(
-                controller: _precioMediaController,
-                keyboardType: TextInputType.number,
+                controller: _salsaMediaBonelessController,
                 decoration:
-                const InputDecoration(labelText: 'Precio media orden'),
+                    const InputDecoration(labelText: 'Salsa para media orden'),
               ),
             const Divider(),
             StreamBuilder<List<Salsa>>(
@@ -122,7 +144,9 @@ class _ProductDialogState extends State<ProductDialog> {
                     Wrap(
                       spacing: 8,
                       children: salsas.map((s) {
-                        final sel = _salsasSeleccionadas.contains(s.nombre);
+                        // Corregido: usar _salsasDisponiblesSeleccionadas
+                        final sel =
+                            _salsasDisponiblesSeleccionadas.contains(s.nombre);
                         return FilterChip(
                           label: Text(s.nombre),
                           selected: sel,
@@ -130,9 +154,11 @@ class _ProductDialogState extends State<ProductDialog> {
                           onSelected: (v) {
                             setState(() {
                               if (v) {
-                                _salsasSeleccionadas.add(s.nombre);
+                                // Corregido: usar _salsasDisponiblesSeleccionadas
+                                _salsasDisponiblesSeleccionadas.add(s.nombre);
                               } else {
-                                _salsasSeleccionadas.remove(s.nombre);
+                                // Corregido: usar _salsasDisponiblesSeleccionadas
+                                _salsasDisponiblesSeleccionadas.remove(s.nombre);
                               }
                             });
                           },
@@ -154,18 +180,19 @@ class _ProductDialogState extends State<ProductDialog> {
         ElevatedButton(
           style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
           onPressed: () {
+            // Corregido: construcción del objeto Product con los campos correctos
             final producto = Product(
               id: widget.product?.id ?? '',
-              nombre: _nombreController.text.trim(),
-              precio: double.tryParse(_precioController.text) ?? 0.0,
-              categoria: _categoriaSeleccionada ?? '',
-              descripcion: _descripcionController.text.trim(),
-              imagenUrl: _imagenController.text.trim(),
+              name: _nameController.text.trim(),
+              price: double.tryParse(_priceController.text) ?? 0.0,
+              stock: double.tryParse(_stockController.text) ?? 0.0,
+              category: _categorySeleccionado ?? '',
               disponible: _disponible,
-              tieneMediaOrden: _tieneMediaOrden,
-              precioMediaOrden:
-              _tieneMediaOrden ? double.tryParse(_precioMediaController.text) : null,
-              salsas: _salsasSeleccionadas,
+              tieneMediaBoneless: _tieneMediaBoneless,
+              salsaMediaBoneless: _tieneMediaBoneless
+                  ? _salsaMediaBonelessController.text
+                  : null,
+              salsasDisponibles: _salsasDisponiblesSeleccionadas,
             );
 
             widget.onSave(producto);

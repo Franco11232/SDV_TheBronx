@@ -1,15 +1,16 @@
-class ItemComanda {
-  String idProducto;
-  String nombre;
-  int cantidad;
-  double priceUnit;
-  double subTotal;
+// lib/models/item_comanda.dart
 
-  // Extensiones extra
-  bool llevaMediaOrdenBones; // Si el cliente pidió media orden
-  double? precioMediaOrden; // Precio adicional
-  String? salsaSeleccionada; // Salsa principal elegida
-  List<String>? salsasSeleccionadas; // Salsas disponibles
+class ItemComanda {
+  final String idProducto;
+  final String nombre;
+  final int cantidad;
+  final double priceUnit;
+  final double subTotal;
+
+  final bool llevaMediaOrdenBones;
+  final double? precioMediaOrden;
+  final List<String>? salsasSeleccionadas;
+  final String? salsaSeleccionada;
 
   ItemComanda({
     required this.idProducto,
@@ -19,34 +20,28 @@ class ItemComanda {
     required this.subTotal,
     this.llevaMediaOrdenBones = false,
     this.precioMediaOrden,
-    this.salsaSeleccionada,
     this.salsasSeleccionadas,
+    this.salsaSeleccionada,
   });
 
-  /// 🔹 Firestore → Objeto
+  // Corregido: Asegurarse de que solo se usen claves en inglés.
   factory ItemComanda.fromMap(Map<String, dynamic> data) {
     return ItemComanda(
       idProducto: data['idProducto'] ?? '',
-      nombre: data['nombre'] ?? '',
-      cantidad: data['cantidad'] ?? 0,
-      priceUnit: (data['priceUnit'] is int)
-          ? (data['priceUnit'] as int).toDouble()
-          : (data['priceUnit'] ?? 0.0),
-      subTotal: (data['subTotal'] is int)
-          ? (data['subTotal'] as int).toDouble()
-          : (data['subTotal'] ?? 0.0),
+      nombre: data['nombre'] ?? '', // Aunque 'nombre' está en español, parece ser el estándar en este modelo.
+      cantidad: (data['cantidad'] ?? 1) as int,
+      priceUnit: (data['priceUnit'] ?? 0.0).toDouble(),
+      subTotal: (data['subTotal'] ?? 0.0).toDouble(),
       llevaMediaOrdenBones: data['llevaMediaOrdenBones'] ?? false,
-      precioMediaOrden: (data['precioMediaOrden'] is int)
-          ? (data['precioMediaOrden'] as int).toDouble()
-          : data['precioMediaOrden'],
-      salsaSeleccionada: data['salsaSeleccionada'],
+      precioMediaOrden: (data['precioMediaOrden'])?.toDouble(),
       salsasSeleccionadas: data['salsasSeleccionadas'] != null
           ? List<String>.from(data['salsasSeleccionadas'])
-          : [],
+          : null,
+      salsaSeleccionada: data['salsaSeleccionada'],
     );
   }
 
-  /// 🔹 Objeto → Firestore
+  // ✅ toMap ya usa los nombres en inglés (y 'nombre'), no necesita cambios.
   Map<String, dynamic> toMap() {
     return {
       'idProducto': idProducto,
@@ -56,12 +51,11 @@ class ItemComanda {
       'subTotal': subTotal,
       'llevaMediaOrdenBones': llevaMediaOrdenBones,
       'precioMediaOrden': precioMediaOrden,
+      'salsasSeleccionadas': salsasSeleccionadas,
       'salsaSeleccionada': salsaSeleccionada,
-      'salsasSeleccionadas': salsasSeleccionadas ?? [],
     };
   }
 
-  /// 🔹 Crea una copia modificada (útil para actualizar cantidad o salsa)
   ItemComanda copyWith({
     String? idProducto,
     String? nombre,
@@ -70,8 +64,8 @@ class ItemComanda {
     double? subTotal,
     bool? llevaMediaOrdenBones,
     double? precioMediaOrden,
-    String? salsaSeleccionada,
     List<String>? salsasSeleccionadas,
+    String? salsaSeleccionada,
   }) {
     return ItemComanda(
       idProducto: idProducto ?? this.idProducto,
@@ -81,8 +75,8 @@ class ItemComanda {
       subTotal: subTotal ?? this.subTotal,
       llevaMediaOrdenBones: llevaMediaOrdenBones ?? this.llevaMediaOrdenBones,
       precioMediaOrden: precioMediaOrden ?? this.precioMediaOrden,
-      salsaSeleccionada: salsaSeleccionada ?? this.salsaSeleccionada,
       salsasSeleccionadas: salsasSeleccionadas ?? this.salsasSeleccionadas,
+      salsaSeleccionada: salsaSeleccionada ?? this.salsaSeleccionada,
     );
   }
 }

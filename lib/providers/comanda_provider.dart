@@ -11,7 +11,7 @@ class ComandaProvider extends ChangeNotifier {
   List<ItemComanda> get productos => _productos;
 
   /// 🔹 Total calculado automáticamente
-  double get total => _productos.fold(0, (sum, item) => sum + item.subTotal);
+  double get total => _productos.fold(0.0, (sum, item) => sum + item.subTotal);
 
   /// ============================================================
   /// 🛒 GESTIÓN LOCAL
@@ -20,7 +20,7 @@ class ComandaProvider extends ChangeNotifier {
   void agregarProducto(Product producto,
       {bool esMediaOrden = false, String? salsa}) {
     final index = _productos.indexWhere((p) =>
-    p.idProducto == producto.id &&
+        p.idProducto == producto.id &&
         p.llevaMediaOrdenBones == esMediaOrden &&
         p.salsaSeleccionada == salsa);
 
@@ -34,10 +34,10 @@ class ComandaProvider extends ChangeNotifier {
     } else {
       _productos.add(ItemComanda(
         idProducto: producto.id,
-        nombre: producto.nombre,
+        nombre: producto.name,
         cantidad: 1,
-        priceUnit: producto.precio,
-        subTotal: producto.precio + (esMediaOrden ? 75.0 : 0),
+        priceUnit: producto.price,
+        subTotal: producto.price + (esMediaOrden ? 75.0 : 0),
         llevaMediaOrdenBones: esMediaOrden,
         precioMediaOrden: esMediaOrden ? 75.0 : null,
         salsaSeleccionada: salsa,
@@ -115,19 +115,16 @@ class ComandaProvider extends ChangeNotifier {
   }
 
   Stream<List<Comanda>> streamComandasActivas() {
-    try {
-      return _db
-          .collection('comandas')
-          .where('estado', isEqualTo: 'pendiente')
-          .orderBy('date', descending: true)
-          .snapshots()
-          .map((snapshot) => snapshot.docs
-          .map((doc) => Comanda.fromMap(doc.id, doc.data()))
-          .toList());
-    } catch (e) {
-      debugPrint('❌ Error al escuchar comandas: $e');
-      return const Stream.empty();
-    }
+    return _db
+        .collection('comandas')
+        .where('estado', whereIn: ['pendiente', 'en_preparacion'])
+        .orderBy('date', descending: false)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs
+          .map((d) => Comanda.fromMap(d.id, d.data()))
+          .toList();
+    });
   }
 
   Future<void> actualizarEstado(String id, String nuevoEstado) async {

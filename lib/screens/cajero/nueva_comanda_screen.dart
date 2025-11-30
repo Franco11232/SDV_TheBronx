@@ -20,11 +20,13 @@ class _NuevaComandaScreenState extends State<NuevaComandaScreen> {
   String _tipo = 'Para llevar';
   bool _guardando = false;
 
+  // Corregido: El valor inicial de fold debe ser 0.0 para que el resultado sea double.
   double get total =>
-      widget.productosSeleccionados.fold(0, (sum, p) => sum + (p.subTotal ?? 0));
+      widget.productosSeleccionados.fold(0.0, (sum, p) => sum + p.subTotal);
 
   Future<void> _guardarComanda() async {
     if (_nombreCtrl.text.trim().isEmpty || _telefonoCtrl.text.trim().isEmpty) {
+       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Ingrese nombre y teléfono del cliente')),
       );
@@ -33,6 +35,7 @@ class _NuevaComandaScreenState extends State<NuevaComandaScreen> {
 
     if (_tipo == 'Domicilio' &&
         (_calleCtrl.text.trim().isEmpty || _colCtrl.text.trim().isEmpty)) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Ingrese la dirección para domicilio')),
       );
@@ -60,17 +63,20 @@ class _NuevaComandaScreenState extends State<NuevaComandaScreen> {
           .collection('comandas')
           .add(nueva.toMap());
 
+      if (!mounted) return; // ✅ Check if widget is still in the tree
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('✅ Comanda creada correctamente')),
       );
 
       Navigator.pop(context, true);
+
     } catch (e) {
+      if (!mounted) return; // ✅ Check if widget is still in the tree
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('❌ Error al crear comanda: $e')),
       );
     } finally {
-      setState(() => _guardando = false);
+      if(mounted) setState(() => _guardando = false); // ✅ Check if mounted
     }
   }
 
@@ -163,7 +169,7 @@ class _NuevaComandaScreenState extends State<NuevaComandaScreen> {
   }
 
   Widget _buildProductoCard(ItemComanda item, int index) {
-    final List<String> salsasDisponibles = [
+    const List<String> salsasDisponibles = [
       'BBQ',
       'Buffalo',
       'Mango Habanero',
@@ -190,13 +196,20 @@ class _NuevaComandaScreenState extends State<NuevaComandaScreen> {
             Row(
               children: [
                 Checkbox(
-                  value: item.llevaMediaOrdenBones ?? false,
+                  value: item.llevaMediaOrdenBones,
                   onChanged: (v) {
+                    // Corregido: Se crea una copia del item con los nuevos valores
                     setState(() {
-                      item.llevaMediaOrdenBones = v ?? false;
+                      final bool newLlevaMedia = v ?? false;
                       final base = item.priceUnit * item.cantidad;
-                      final extra = item.llevaMediaOrdenBones ? 75.0 : 0.0;
-                      item.subTotal = base + extra;
+                      final extra = newLlevaMedia ? 75.0 : 0.0;
+                      
+                      final newItem = item.copyWith(
+                        llevaMediaOrdenBones: newLlevaMedia,
+                        subTotal: base + extra,
+                        precioMediaOrden: newLlevaMedia ? 75.0 : null, // Actualizar precio media orden
+                      );
+                      widget.productosSeleccionados[index] = newItem;
                     });
                   },
                 ),
@@ -214,8 +227,12 @@ class _NuevaComandaScreenState extends State<NuevaComandaScreen> {
                   .map((s) => DropdownMenuItem(value: s, child: Text(s)))
                   .toList(),
               onChanged: (v) {
+                 // Corregido: Se crea una copia del item con la nueva salsa
                 setState(() {
-                  item.salsasSeleccionadas = v != null ? [v] : [];
+                  final newItem = item.copyWith(
+                    salsasSeleccionadas: v != null ? [v] : [],
+                  );
+                  widget.productosSeleccionados[index] = newItem;
                 });
               },
             ),

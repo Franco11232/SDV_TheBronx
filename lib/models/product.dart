@@ -1,125 +1,76 @@
+// lib/models/product.dart
 class Product {
-  String id;
-  String nombre;
-  String categoria;
-  double precio;
-  String descripcion;
-  String imagenUrl;
-  bool disponible;
+  final String id;
+  final String name;
+  final double price;
+  final double stock;
+  final String category;
+  final bool disponible;
 
-  // 🔹 Campos para media orden
-  bool tieneMediaOrden;
-  double? precioMediaOrden;
-
-  // 🔹 Campos para salsas
-  List<String> salsas;
-  String? salsaSeleccionada;
-
-  // 🔹 Campos usados en comandas
-  bool mediaOrdenSeleccionada;
-  String? salsaComanda;
+  final bool tieneMediaBoneless;
+  final String? salsaMediaBoneless;
+  final List<String> salsasDisponibles;
 
   Product({
-    this.id = '',
-    required this.nombre,
-    required this.categoria,
-    required this.precio,
-    this.descripcion = '',
-    this.imagenUrl = '',
-    this.disponible = true,
-    this.tieneMediaOrden = false,
-    this.precioMediaOrden,
-    this.salsas = const [],
-    this.salsaSeleccionada,
-    this.mediaOrdenSeleccionada = false,
-    this.salsaComanda,
+    required this.id,
+    required this.name,
+    required this.price,
+    required this.stock,
+    required this.category,
+    required this.disponible,
+    this.tieneMediaBoneless = false,
+    this.salsaMediaBoneless,
+    this.salsasDisponibles = const [],
   });
 
-  /// 🔹 Convierte un documento Firestore en un objeto Product
+  // Corregido: Se eliminan las claves en español (nombre, precio, categoria)
   factory Product.fromMap(String id, Map<String, dynamic> data) {
     return Product(
       id: id,
-      nombre: data['nombre'] ?? '',
-      categoria: data['categoria'] ?? '',
-      precio: (data['precio'] != null)
-          ? (data['precio'] is int
-          ? (data['precio'] as int).toDouble()
-          : (data['precio'] as num).toDouble())
-          : 0.0,
-      descripcion: data['descripcion'] ?? '',
-      imagenUrl: data['imagenUrl'] ?? '',
+      name: data['name'] ?? '',
+      price: (data['price'] ?? 0).toDouble(),
+      stock: (data['stock'] ?? 0).toDouble(),
+      category: data['category'] ?? '',
       disponible: data['disponible'] ?? true,
-      tieneMediaOrden: data['tieneMediaOrden'] ?? false,
-      precioMediaOrden: (data['precioMediaOrden'] != null)
-          ? (data['precioMediaOrden'] is int
-          ? (data['precioMediaOrden'] as int).toDouble()
-          : (data['precioMediaOrden'] as num).toDouble())
-          : null,
-      salsas: (data['salsas'] != null)
-          ? List<String>.from(data['salsas'])
-          : [],
-      salsaSeleccionada: data['salsaSeleccionada'],
-      mediaOrdenSeleccionada: data['mediaOrdenSeleccionada'] ?? false,
-      salsaComanda: data['salsaComanda'],
+      tieneMediaBoneless: data['tieneMediaBoneless'] ?? false,
+      salsaMediaBoneless: data['salsaMediaBoneless'],
+      salsasDisponibles: List<String>.from(data['salsasDisponibles'] ?? []),
     );
   }
 
-  /// 🔹 Convierte el objeto Product a un mapa para guardar en Firestore
-  Map<String, dynamic> toMap() {
-    return {
-      'nombre': nombre,
-      'categoria': categoria,
-      'precio': precio,
-      'descripcion': descripcion,
-      'imagenUrl': imagenUrl,
-      'disponible': disponible,
-      'tieneMediaOrden': tieneMediaOrden,
-      'precioMediaOrden': precioMediaOrden,
-      'salsas': salsas,
-      'salsaSeleccionada': salsaSeleccionada,
-      'mediaOrdenSeleccionada': mediaOrdenSeleccionada,
-      'salsaComanda': salsaComanda,
-    };
-  }
+  // ✅ toMap ya usa los nombres en inglés, no necesita cambios.
+  Map<String, dynamic> toMap() => {
+    'name': name,
+    'price': price,
+    'stock': stock,
+    'category': category,
+    'disponible': disponible,
+    'tieneMediaBoneless': tieneMediaBoneless,
+    'salsaMediaBoneless': salsaMediaBoneless,
+    'salsasDisponibles': salsasDisponibles,
+  };
 
   Product copyWith({
     String? id,
-    String? nombre,
-    String? categoria,
-    double? precio,
-    String? descripcion,
-    String? imagenUrl,
+    String? name,
+    double? price,
+    double? stock,
+    String? category,
     bool? disponible,
-    bool? tieneMediaOrden,
-    double? precioMediaOrden,
-    List<String>? salsas,
-    String? salsaSeleccionada,
-    bool? mediaOrdenSeleccionada,
-    String? salsaComanda,
+    bool? tieneMediaBoneless,
+    String? salsaMediaBoneless,
+    List<String>? salsasDisponibles,
   }) {
     return Product(
       id: id ?? this.id,
-      nombre: nombre ?? this.nombre,
-      categoria: categoria ?? this.categoria,
-      precio: precio ?? this.precio,
-      descripcion: descripcion ?? this.descripcion,
-      imagenUrl: imagenUrl ?? this.imagenUrl,
+      name: name ?? this.name,
+      price: price ?? this.price,
+      stock: stock ?? this.stock,
+      category: category ?? this.category,
       disponible: disponible ?? this.disponible,
-      tieneMediaOrden: tieneMediaOrden ?? this.tieneMediaOrden,
-      precioMediaOrden: precioMediaOrden ?? this.precioMediaOrden,
-      salsas: salsas ?? this.salsas,
-      salsaSeleccionada: salsaSeleccionada ?? this.salsaSeleccionada,
-      mediaOrdenSeleccionada:
-      mediaOrdenSeleccionada ?? this.mediaOrdenSeleccionada,
-      salsaComanda: salsaComanda ?? this.salsaComanda,
+      tieneMediaBoneless: tieneMediaBoneless ?? this.tieneMediaBoneless,
+      salsaMediaBoneless: salsaMediaBoneless ?? this.salsaMediaBoneless,
+      salsasDisponibles: salsasDisponibles ?? this.salsasDisponibles,
     );
-  }
-
-  double getPrecioTotal() {
-    double total = precio;
-    if (mediaOrdenSeleccionada && precioMediaOrden != null) {
-      total += precioMediaOrden!;
-    }
-    return total;
   }
 }

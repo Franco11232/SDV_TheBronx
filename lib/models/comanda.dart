@@ -1,18 +1,19 @@
+// lib/models/comanda.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'item_comanda.dart';
 
 class Comanda {
-  String? id;
-  String clientName;
-  String clientPhone;
-  String type; // Para llevar / Domicilio / Comer aquí
-  String address;
-  String addressCol;
-  Map<String, dynamic> payment; // { estado: 'pendiente', metodo: 'efectivo' }
-  String estado; // pendiente / en_preparacion / entregado / cancelado
-  DateTime date;
-  double total;
-  List<ItemComanda> details;
+  final String? id;
+  final String clientName;
+  final String clientPhone;
+  final String type;
+  final String address;
+  final String addressCol;
+  final String estado;
+  final Map<String, dynamic> payment;
+  final DateTime date;
+  final double total;
+  final List<ItemComanda> details;
 
   Comanda({
     this.id,
@@ -21,15 +22,32 @@ class Comanda {
     required this.type,
     required this.address,
     required this.addressCol,
-    required this.payment,
     required this.estado,
+    required this.payment,
     required this.date,
     required this.total,
     required this.details,
   });
 
-  /// 🔹 Firestore → Comanda
+  // Corregido: Se eliminan las claves en español (clienteNombre, fecha, etc.)
   factory Comanda.fromMap(String id, Map<String, dynamic> data) {
+    DateTime fecha;
+    final rawFecha = data['date']; // Solo se usa la clave en inglés
+    if (rawFecha is Timestamp) {
+      fecha = rawFecha.toDate();
+    } else if (rawFecha is String) {
+      fecha = DateTime.tryParse(rawFecha) ?? DateTime.now();
+    } else if (rawFecha is DateTime) {
+      fecha = rawFecha;
+    } else {
+      fecha = DateTime.now();
+    }
+
+    final detalles = (data['details'] as List<dynamic>?)
+        ?.map((e) => ItemComanda.fromMap(Map<String, dynamic>.from(e)))
+        .toList() ??
+        [];
+
     return Comanda(
       id: id,
       clientName: data['clientName'] ?? '',
@@ -37,26 +55,15 @@ class Comanda {
       type: data['type'] ?? 'Para llevar',
       address: data['address'] ?? '',
       addressCol: data['addressCol'] ?? '',
-      payment: Map<String, dynamic>.from(
-          data['payment'] ?? {'estado': 'pendiente', 'metodo': 'efectivo'}),
       estado: data['estado'] ?? 'pendiente',
-      date: (data['date'] != null)
-          ? (data['date'] as Timestamp).toDate()
-          : DateTime.now(),
-      total: (data['total'] != null)
-          ? (data['total'] is int
-          ? (data['total'] as int).toDouble()
-          : data['total'])
-          : 0.0,
-      details: data['details'] != null
-          ? (data['details'] as List)
-          .map((e) => ItemComanda.fromMap(Map<String, dynamic>.from(e)))
-          .toList()
-          : [],
+      payment: Map<String, dynamic>.from(data['payment'] ?? {}),
+      date: fecha,
+      total: (data['total'] ?? 0).toDouble(),
+      details: detalles,
     );
   }
 
-  /// 🔹 Comanda → Firestore
+  // ✅ toMap ya usa los nombres en inglés, no necesita cambios.
   Map<String, dynamic> toMap() {
     return {
       'clientName': clientName,
@@ -64,11 +71,11 @@ class Comanda {
       'type': type,
       'address': address,
       'addressCol': addressCol,
-      'payment': payment,
       'estado': estado,
-      'date': date,
+      'payment': payment,
+      'date': FieldValue.serverTimestamp(),
       'total': total,
-      'details': details.map((e) => e.toMap()).toList(),
+      'details': details.map((d) => d.toMap()).toList(),
     };
   }
 }

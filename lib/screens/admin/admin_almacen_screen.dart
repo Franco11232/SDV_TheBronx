@@ -33,14 +33,14 @@ class AdminAlmacenScreen extends StatelessWidget {
           }
 
           final productos = snapshot.data!;
-          final categorias = productos.map((p) => p.categoria).toSet().toList();
+          final categorias = productos.map((p) => p.category).toSet().toList();
 
           return ListView.builder(
             itemCount: categorias.length,
             itemBuilder: (context, i) {
               final categoria = categorias[i];
               final productosCategoria =
-              productos.where((p) => p.categoria == categoria).toList();
+              productos.where((p) => p.category == categoria).toList();
 
               return Card(
                 margin: const EdgeInsets.all(10),
@@ -60,9 +60,9 @@ class AdminAlmacenScreen extends StatelessWidget {
                   ]
                       : productosCategoria.map((p) {
                     return ListTile(
-                      title: Text(p.nombre),
+                      title: Text(p.name),
                       subtitle: Text(
-                        'Stock: | \$${p.precio.toStringAsFixed(2)}',
+                        'Stock: | \$${p.price.toStringAsFixed(2)}',
                       ),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,

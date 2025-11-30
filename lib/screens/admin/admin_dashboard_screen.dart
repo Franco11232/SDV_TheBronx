@@ -44,7 +44,7 @@ class AdminDashboardScreen extends StatelessWidget {
             final cat = categories[i];
             final total = data[cat] ?? 0.0;
             return ListTile(
-              title: Text('$cat'),
+              title: Text(cat),
               subtitle: Text('Venta del día: \$${total.toStringAsFixed(2)}'),
               trailing: const Icon(Icons.chevron_right),
               onTap: () {

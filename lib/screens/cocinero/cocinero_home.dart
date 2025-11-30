@@ -10,56 +10,81 @@ class CocineroHome extends StatelessWidget {
   Widget build(BuildContext context) {
     final prov = Provider.of<ComandaProvider>(context, listen: false);
 
-    return StreamBuilder<List<Comanda>>(
-      stream: prov.streamComandasActivas(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
+    return Scaffold(
+      appBar: AppBar(title: const Text('Cocinero - Comandas'), backgroundColor: Colors.brown.shade400),
+      body: StreamBuilder<List<Comanda>>(
+        stream: prov.streamComandasActivas(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-        if (snapshot.hasError) {
-          return Center(child: Text('Error: ${snapshot.error}'));
-        }
+          if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          }
 
-        final comandas = snapshot.data ?? [];
-        if (comandas.isEmpty) {
-          return const Center(child: Text('No hay comandas pendientes'));
-        }
+          final comandas = snapshot.data ?? [];
+          if (comandas.isEmpty) {
+            return const Center(child: Text('No hay comandas pendientes'));
+          }
 
-        return ListView.builder(
-          itemCount: comandas.length,
-          itemBuilder: (context, i) {
-            final com = comandas[i];
+          return ListView.builder(
+            itemCount: comandas.length,
+            itemBuilder: (context, i) {
+              final com = comandas[i];
 
-            return Card(
-              margin: const EdgeInsets.all(8),
-              child: ListTile(
-                title: Text(
-                  com.clientName.isEmpty ? 'Sin nombre' : com.clientName,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                subtitle: Text(
-                  'Items: ${com.details.length} • Total: \$${com.total.toStringAsFixed(2)}\n'
-                      'Estado: ${com.estado}',
-                ),
-                trailing: PopupMenuButton<String>(
-                  onSelected: (v) => prov.actualizarEstado(com.id!, v),
-                  itemBuilder: (_) => const [
-                    PopupMenuItem(
-                      value: 'en_preparacion',
-                      child: Text('En preparación'),
-                    ),
-                    PopupMenuItem(
-                      value: 'listo',
-                      child: Text('Listo'),
+              // Corregido: Filtrar detalles nulos para evitar errores.
+              final detallesValidos = com.details.where((d) => d != null).toList();
+
+              return Card(
+                margin: const EdgeInsets.all(8),
+                child: ExpansionTile(
+                  title: Text(
+                    com.clientName.isEmpty ? 'Sin nombre' : com.clientName,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text('Estado: ${com.estado} • Total: \$${com.total.toStringAsFixed(2)}'),
+                  children: [
+                    // Corregido: Usar la lista de detalles filtrada.
+                    ...detallesValidos.map((item) {
+                      // Como detallesValidos no tiene nulos, podemos acceder a las propiedades de forma segura.
+                      return ListTile(
+                        title: Text(item.nombre),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Cantidad: ${item.cantidad}'),
+                            if (item.salsasSeleccionadas != null && item.salsasSeleccionadas!.isNotEmpty)
+                              Text('Salsas: ${item.salsasSeleccionadas!.join(', ')}'),
+                            if (item.llevaMediaOrdenBones)
+                              Text('Media orden: +\$${item.precioMediaOrden?.toStringAsFixed(2) ?? '75.00'}'),
+                          ],
+                        ),
+                        trailing: Text('\$${item.subTotal.toStringAsFixed(2)}'),
+                      );
+                    }),
+                    OverflowBar(
+                      alignment: MainAxisAlignment.end,
+                      children: [
+                        if (com.estado == 'pendiente')
+                          TextButton(
+                            onPressed: () => prov.actualizarEstado(com.id!, 'en_preparacion'),
+                            child: const Text('Mover a Preparación'),
+                          ),
+                        if (com.estado == 'en_preparacion')
+                          TextButton(
+                            onPressed: () => prov.actualizarEstado(com.id!, 'listo'),
+                            child: const Text('Marcar como Listo'),
+                          ),
+                      ],
                     ),
                   ],
                 ),
-              ),
-            );
-          },
-        );
-      },
+              );
+            },
+          );
+        },
+      ),
     );
   }
 }

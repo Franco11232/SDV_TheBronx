@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/product.dart';
 import '../../services/product_service.dart';
 
@@ -14,21 +13,23 @@ class _AdminHomeState extends State<AdminHome> {
   final ProductService _productService = ProductService();
 
   void _mostrarDialogoProducto({Product? productoExistente}) {
-    final TextEditingController nombreCtrl = TextEditingController(text: productoExistente?.nombre ?? '');
-    final TextEditingController categoriaCtrl = TextEditingController(text: productoExistente?.categoria ?? '');
+    final TextEditingController nombreCtrl = TextEditingController(text: productoExistente?.name ?? '');
+    final TextEditingController categoriaCtrl = TextEditingController(text: productoExistente?.category ?? '');
     final TextEditingController precioCtrl = TextEditingController(
-        text: productoExistente?.precio != null ? productoExistente!.precio.toString() : '');
-    final TextEditingController descripcionCtrl = TextEditingController(text: productoExistente?.descripcion ?? '');
-    final TextEditingController imagenCtrl = TextEditingController(text: productoExistente?.imagenUrl ?? '');
-    final TextEditingController precioMediaCtrl = TextEditingController(
-        text: productoExistente?.precioMediaOrden != null
-            ? productoExistente!.precioMediaOrden.toString()
-            : '');
+        text: productoExistente?.price != null ? productoExistente!.price.toString() : '');
+    // Corregido: añadido controlador para stock
+    final TextEditingController stockCtrl = TextEditingController(
+        text: productoExistente?.stock != null ? productoExistente!.stock.toString() : '');
+    // Corregido: añadido controlador para salsaMediaBoneless
+    final TextEditingController salsaMediaBonelessCtrl =
+    TextEditingController(text: productoExistente?.salsaMediaBoneless ?? '');
     final TextEditingController salsaCtrl = TextEditingController();
 
     bool disponible = productoExistente?.disponible ?? true;
-    bool tieneMediaOrden = productoExistente?.tieneMediaOrden ?? false;
-    List<String> salsas = List<String>.from(productoExistente?.salsas ?? []);
+    // Corregido: renombrado a tieneMediaBoneless
+    bool tieneMediaBoneless = productoExistente?.tieneMediaBoneless ?? false;
+    // Corregido: renombrado a salsasDisponibles
+    List<String> salsasDisponibles = List<String>.from(productoExistente?.salsasDisponibles ?? []);
 
     showDialog(
       context: context,
@@ -55,40 +56,38 @@ class _AdminHomeState extends State<AdminHome> {
                       keyboardType: TextInputType.number,
                       decoration: const InputDecoration(labelText: 'Precio'),
                     ),
+                    // Corregido: añadido textfield para stock
                     TextField(
-                      controller: descripcionCtrl,
-                      decoration: const InputDecoration(labelText: 'Descripción'),
-                    ),
-                    TextField(
-                      controller: imagenCtrl,
-                      decoration: const InputDecoration(labelText: 'URL de imagen'),
+                      controller: stockCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(labelText: 'Stock (Kg/U.)'),
                     ),
                     const SizedBox(height: 10),
 
-                    // ✅ Checkbox para media orden
+                    // Corregido: Checkbox para media orden de boneless
                     CheckboxListTile(
-                      title: const Text('Tiene media orden'),
-                      value: tieneMediaOrden,
-                      onChanged: (v) => setState(() => tieneMediaOrden = v ?? false),
+                      title: const Text('Tiene media orden de boneless'),
+                      value: tieneMediaBoneless,
+                      onChanged: (v) => setState(() => tieneMediaBoneless = v ?? false),
                     ),
 
-                    if (tieneMediaOrden)
+                    // Corregido: campo para la salsa de la media orden
+                    if (tieneMediaBoneless)
                       TextField(
-                        controller: precioMediaCtrl,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(labelText: 'Precio media orden'),
+                        controller: salsaMediaBonelessCtrl,
+                        decoration: const InputDecoration(labelText: 'Salsa para media orden'),
                       ),
 
                     const SizedBox(height: 10),
 
-                    // ✅ Lista de salsas
+                    // Corregido: Lista de salsas
                     const Text('Salsas disponibles', style: TextStyle(fontWeight: FontWeight.bold)),
                     Wrap(
                       spacing: 6,
-                      children: salsas
+                      children: salsasDisponibles
                           .map((s) => Chip(
                         label: Text(s),
-                        onDeleted: () => setState(() => salsas.remove(s)),
+                        onDeleted: () => setState(() => salsasDisponibles.remove(s)),
                       ))
                           .toList(),
                     ),
@@ -105,7 +104,7 @@ class _AdminHomeState extends State<AdminHome> {
                           onPressed: () {
                             if (salsaCtrl.text.trim().isNotEmpty) {
                               setState(() {
-                                salsas.add(salsaCtrl.text.trim());
+                                salsasDisponibles.add(salsaCtrl.text.trim());
                                 salsaCtrl.clear();
                               });
                             }
@@ -129,18 +128,18 @@ class _AdminHomeState extends State<AdminHome> {
           actions: [
             TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
             ElevatedButton(
-              onPressed: () async {
+              onPressed:() async {
+                // Corregido: llamada al constructor Product con los campos correctos
                 final nuevoProducto = Product(
                   id: productoExistente?.id ?? '',
-                  nombre: nombreCtrl.text,
-                  categoria: categoriaCtrl.text,
-                  precio: double.tryParse(precioCtrl.text) ?? 0.0,
-                  descripcion: descripcionCtrl.text,
-                  imagenUrl: imagenCtrl.text,
+                  name: nombreCtrl.text,
+                  category: categoriaCtrl.text,
+                  price: double.tryParse(precioCtrl.text) ?? 0.0,
+                  stock: double.tryParse(stockCtrl.text) ?? 0.0,
                   disponible: disponible,
-                  tieneMediaOrden: tieneMediaOrden,
-                  precioMediaOrden: double.tryParse(precioMediaCtrl.text),
-                  salsas: salsas,
+                  tieneMediaBoneless: tieneMediaBoneless,
+                  salsaMediaBoneless: tieneMediaBoneless ? salsaMediaBonelessCtrl.text : null,
+                  salsasDisponibles: salsasDisponibles,
                 );
 
                 if (productoExistente == null) {
@@ -178,8 +177,8 @@ class _AdminHomeState extends State<AdminHome> {
             itemBuilder: (context, index) {
               final p = productos[index];
               return ListTile(
-                title: Text(p.nombre),
-                subtitle: Text('\$${p.precio.toStringAsFixed(2)} - ${p.categoria}'),
+                title: Text(p.name),
+                subtitle: Text('\$${p.price.toStringAsFixed(2)} - ${p.category}'),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [

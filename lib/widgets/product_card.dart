@@ -19,14 +19,14 @@ class ProductCard extends StatelessWidget {
             const Icon(Icons.fastfood, size: 40, color: Colors.green),
             const SizedBox(height: 8),
             Text(
-              product.nombre,
+              product.name,
               textAlign: TextAlign.center,
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
-            Text('\$${product.precio.toStringAsFixed(2)}',
+            Text('\$${product.price.toStringAsFixed(2)}',
                 style: const TextStyle(color: Colors.green)),
-            if (product.categoria.isNotEmpty)
-              Text(product.categoria,
+            if (product.category.isNotEmpty)
+              Text(product.category,
                   style: const TextStyle(fontSize: 12, color: Colors.grey)),
           ],
         ),
