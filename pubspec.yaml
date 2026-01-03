@@ -21,13 +21,25 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
   flutter_lints: ^6.0.0
+  # ✅ He añadido el paquete para generar los íconos
+  flutter_launcher_icons: ^0.13.1
 
 
 flutter:
   uses-material-design: true
   assets:
     - img/login_img.jpeg
+    # ✅ He añadido la ruta del nuevo ícono para que Flutter lo reconozca
+    - img/Icono-logo.jpeg
 
-  
+# ✅ He añadido la configuración para el generador de íconos
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "img/Icono-logo.jpeg"
+  web:
+    generate: true
+    image_path: "img/Icono-logo.jpeg"
+    background_color: "#000000"
+    theme_color: "#000000"

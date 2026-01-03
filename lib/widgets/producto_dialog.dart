@@ -22,39 +22,40 @@ class ProductDialog extends StatefulWidget {
 }
 
 class _ProductDialogState extends State<ProductDialog> {
-  // Corregido: controladores para los campos del modelo Product
   late TextEditingController _nameController;
   late TextEditingController _priceController;
   late TextEditingController _stockController;
-  late TextEditingController _salsaMediaBonelessController;
 
+  // ✅ Estado para la nueva lógica de salsas
   late bool _disponible;
   late bool _tieneMediaBoneless;
+  late bool _acceptsSauce;
   String? _categorySeleccionado;
-  List<String> _salsasDisponiblesSeleccionadas = [];
+  late List<String> _salsasParaProducto;
 
   @override
   void initState() {
     super.initState();
     final p = widget.product;
-    // Corregido: usar 'name' en lugar de 'nombre'
     _nameController = TextEditingController(text: p?.name ?? '');
-    // Corregido: usar 'price' en lugar de 'precio'
     _priceController = TextEditingController(text: p?.price.toString() ?? '');
-    // Corregido: añadir 'stock'
     _stockController = TextEditingController(text: p?.stock.toString() ?? '');
-    // Corregido: usar 'salsaMediaBoneless' en lugar de 'precioMediaOrden'
-    _salsaMediaBonelessController =
-        TextEditingController(text: p?.salsaMediaBoneless ?? '');
 
     _disponible = p?.disponible ?? true;
-    // Corregido: usar 'tieneMediaBoneless' en lugar de 'tieneMediaOrden'
     _tieneMediaBoneless = p?.tieneMediaBoneless ?? false;
-    // Corregido: usar 'category' en lugar de 'categoria'
     _categorySeleccionado = p?.category;
-    // Corregido: usar 'salsasDisponibles' en lugar de 'salsas'
-    _salsasDisponiblesSeleccionadas =
-        List<String>.from(p?.salsasDisponibles ?? []);
+    
+    // ✅ Inicializar el nuevo estado para las salsas
+    _acceptsSauce = p?.acceptsSauce ?? false;
+    _salsasParaProducto = List<String>.from(p?.salsasDisponibles ?? []);
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _priceController.dispose();
+    _stockController.dispose();
+    super.dispose();
   }
 
   @override
@@ -68,19 +69,16 @@ class _ProductDialogState extends State<ProductDialog> {
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
-              // Corregido: usar _nameController
               controller: _nameController,
               decoration: const InputDecoration(labelText: 'Nombre'),
             ),
             const SizedBox(height: 10),
             TextField(
-              // Corregido: usar _priceController
               controller: _priceController,
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(labelText: 'Precio'),
             ),
             const SizedBox(height: 10),
-            // Corregido: añadir campo para stock
             TextField(
               controller: _stockController,
               keyboardType: TextInputType.number,
@@ -92,17 +90,13 @@ class _ProductDialogState extends State<ProductDialog> {
               builder: (context, snapshot) {
                 if (!snapshot.hasData) return const CircularProgressIndicator();
                 final categorias = snapshot.data!;
-                if (categorias.isEmpty) {
-                  return const Text('No hay categorías disponibles');
-                }
                 return DropdownButtonFormField<String>(
-                  // Corregido: usar _categorySeleccionado
                   value: _categorySeleccionado,
                   hint: const Text('Seleccione una categoría'),
                   decoration: const InputDecoration(labelText: 'Categoría'),
                   items: categorias
                       .map((c) =>
-                          DropdownMenuItem(value: c.nombre, child: Text(c.nombre)))
+                          DropdownMenuItem(value: c.name, child: Text(c.name)))
                       .toList(),
                   onChanged: (val) =>
                       setState(() => _categorySeleccionado = val),
@@ -117,58 +111,55 @@ class _ProductDialogState extends State<ProductDialog> {
               onChanged: (v) => setState(() => _disponible = v),
             ),
             const Divider(),
-            // Corregido: Texto y valor para media orden de boneless
             CheckboxListTile(
-              title: const Text('Tiene media orden de boneless'),
+              title: const Text('Tiene media orden de boneless (+costo)'),
               value: _tieneMediaBoneless,
               onChanged: (v) => setState(() => _tieneMediaBoneless = v ?? false),
             ),
-            // Corregido: campo para la salsa de la media orden
-            if (_tieneMediaBoneless)
-              TextField(
-                controller: _salsaMediaBonelessController,
-                decoration:
-                    const InputDecoration(labelText: 'Salsa para media orden'),
-              ),
             const Divider(),
-            StreamBuilder<List<Salsa>>(
-              stream: widget.salsasStream,
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) return const CircularProgressIndicator();
-                final salsas = snapshot.data!;
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Salsas disponibles:',
-                        style: TextStyle(fontWeight: FontWeight.bold)),
-                    Wrap(
-                      spacing: 8,
-                      children: salsas.map((s) {
-                        // Corregido: usar _salsasDisponiblesSeleccionadas
-                        final sel =
-                            _salsasDisponiblesSeleccionadas.contains(s.nombre);
-                        return FilterChip(
-                          label: Text(s.nombre),
-                          selected: sel,
-                          selectedColor: Colors.green,
-                          onSelected: (v) {
-                            setState(() {
-                              if (v) {
-                                // Corregido: usar _salsasDisponiblesSeleccionadas
-                                _salsasDisponiblesSeleccionadas.add(s.nombre);
-                              } else {
-                                // Corregido: usar _salsasDisponiblesSeleccionadas
-                                _salsasDisponiblesSeleccionadas.remove(s.nombre);
-                              }
-                            });
-                          },
-                        );
-                      }).toList(),
-                    ),
-                  ],
-                );
-              },
+
+            // ✅ Corregido: Checkbox para habilitar la selección de salsas
+            CheckboxListTile(
+              title: const Text('Este producto puede llevar salsa'),
+              value: _acceptsSauce,
+              onChanged: (v) => setState(() => _acceptsSauce = v ?? false),
             ),
+
+            // ✅ Si el producto acepta salsa, se muestra la lista de salsas disponibles
+            if (_acceptsSauce)
+              StreamBuilder<List<Salsa>>(
+                stream: widget.salsasStream,
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) return const SizedBox.shrink();
+                  final allSalsas = snapshot.data!;
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Salsas aplicables a este producto:',
+                          style: TextStyle(fontWeight: FontWeight.bold)),
+                      Wrap(
+                        spacing: 8,
+                        children: allSalsas.map((salsa) {
+                          final isSelected = _salsasParaProducto.contains(salsa.name);
+                          return FilterChip(
+                            label: Text(salsa.name),
+                            selected: isSelected,
+                            onSelected: (selected) {
+                              setState(() {
+                                if (selected) {
+                                  _salsasParaProducto.add(salsa.name);
+                                } else {
+                                  _salsasParaProducto.remove(salsa.name);
+                                }
+                              });
+                            },
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                  );
+                },
+              ),
           ],
         ),
       ),
@@ -180,7 +171,7 @@ class _ProductDialogState extends State<ProductDialog> {
         ElevatedButton(
           style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
           onPressed: () {
-            // Corregido: construcción del objeto Product con los campos correctos
+            // ✅ Corregido: Se guarda el producto con la nueva estructura de datos
             final producto = Product(
               id: widget.product?.id ?? '',
               name: _nameController.text.trim(),
@@ -189,10 +180,8 @@ class _ProductDialogState extends State<ProductDialog> {
               category: _categorySeleccionado ?? '',
               disponible: _disponible,
               tieneMediaBoneless: _tieneMediaBoneless,
-              salsaMediaBoneless: _tieneMediaBoneless
-                  ? _salsaMediaBonelessController.text
-                  : null,
-              salsasDisponibles: _salsasDisponiblesSeleccionadas,
+              acceptsSauce: _acceptsSauce,
+              salsasDisponibles: _acceptsSauce ? _salsasParaProducto : [],
             );
 
             widget.onSave(producto);

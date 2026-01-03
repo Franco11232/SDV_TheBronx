@@ -23,7 +23,7 @@ class _CategoriaDialogState extends State<CategoriaDialog> {
           onPressed: () async {
             final nombre = _nombreCtrl.text.trim();
             if (nombre.isEmpty) return;
-            final c = Categoria(id: '', nombre: nombre);
+            final c = Categoria(id: '', name: nombre);
             await almacen.agregarCategoria(c);
             Navigator.pop(context);
           },

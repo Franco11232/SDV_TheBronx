@@ -1,8 +1,11 @@
-// lib/screens/cajero/historial_screen.dart
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
 import '../../models/comanda.dart';
+import '../../providers/comanda_provider.dart';
 import '../../widgets/comanda_tile.dart';
+import '../../widgets/pago_dialog.dart';
+import 'nueva_comanda_screen.dart'; // ✅ Importar la pantalla de edición/creación
 
 class HistorialScreen extends StatefulWidget {
   const HistorialScreen({super.key});
@@ -13,7 +16,8 @@ class HistorialScreen extends StatefulWidget {
 
 class _HistorialScreenState extends State<HistorialScreen> {
   String filtro = 'todas';
-  final estados = ['todas', 'pendiente', 'en preparacion', 'listo', 'entregado'];
+  
+  final estados = ['todas', 'pendiente', 'en_preparacion', 'listo', 'entregado'];
 
   Stream<List<Comanda>> getComandas() {
     final hoy = DateTime.now();
@@ -22,9 +26,9 @@ class _HistorialScreenState extends State<HistorialScreen> {
 
     final ref = FirebaseFirestore.instance
         .collection('comandas')
-        .where('fecha', isGreaterThanOrEqualTo: inicioDia)
-        .where('fecha', isLessThan: finDia)
-        .orderBy('fecha', descending: true);
+        .where('date', isGreaterThanOrEqualTo: inicioDia)
+        .where('date', isLessThan: finDia)
+        .orderBy('date', descending: true);
 
     return ref.snapshots().map((snapshot) {
       final data = snapshot.docs.map((doc) {
@@ -38,6 +42,12 @@ class _HistorialScreenState extends State<HistorialScreen> {
 
   @override
   Widget build(BuildContext context) {
+    String capitalize(String s) {
+      if (s.isEmpty) return '';
+      final text = s.replaceAll('_', ' ');
+      return text[0].toUpperCase() + text.substring(1);
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Historial del día'),
@@ -53,7 +63,7 @@ class _HistorialScreenState extends State<HistorialScreen> {
             items: estados.map((estado) {
               return DropdownMenuItem(
                 value: estado,
-                child: Text(estado[0].toUpperCase() + estado.substring(1)),
+                child: Text(capitalize(estado)),
               );
             }).toList(),
           ),
@@ -78,9 +88,38 @@ class _HistorialScreenState extends State<HistorialScreen> {
             itemCount: comandas.length,
             itemBuilder: (context, index) {
               final c = comandas[index];
+              // ✅ Lógica de onTap mejorada para editar o pagar
               return ComandaTile(
                 comanda: c,
-                onTap: () {},
+                tileColor: c.estado == 'listo' ? Colors.green.shade100 : (c.estado == 'pendiente' ? Colors.orange.shade100 : null),
+                onTap: () {
+                  if (c.estado == 'pendiente') {
+                    // Navegar a la pantalla de edición
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => NuevaComandaScreen(comanda: c),
+                      ),
+                    );
+                  } else if (c.estado == 'listo') {
+                    // Mostrar diálogo de pago
+                    showDialog(
+                      context: context,
+                      builder: (_) => ChangeNotifierProvider.value(
+                        value: context.read<ComandaProvider>(),
+                        child: PagoDialog(comanda: c),
+                      ),
+                    );
+                  } else {
+                    // Mensaje para otros estados
+                    ScaffoldMessenger.of(context).showSnackBar(
+                       SnackBar(
+                        content: Text('Esta comanda no se puede editar ni pagar (Estado: ${c.estado})'),
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                  }
+                },
               );
             },
           );

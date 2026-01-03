@@ -26,7 +26,7 @@ class AdminSalsasScreen extends StatelessWidget {
               return Card(
                 margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 child: ListTile(
-                  title: Text(s.nombre),
+                  title: Text(s.name),
                   subtitle: Text(s.disponible ? 'Disponible' : 'No disponible'),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -57,7 +57,7 @@ class AdminSalsasScreen extends StatelessWidget {
 
   void _mostrarDialogo(BuildContext context, {Salsa? salsa}) {
     final almacen = Provider.of<AlmacenProvider>(context, listen: false);
-    final nombreCtrl = TextEditingController(text: salsa?.nombre ?? '');
+    final nombreCtrl = TextEditingController(text: salsa?.name ?? '');
     bool disponible = salsa?.disponible ?? true;
 
     showDialog(
@@ -85,7 +85,7 @@ class AdminSalsasScreen extends StatelessWidget {
             onPressed: () async {
               final nombre = nombreCtrl.text.trim();
               if (nombre.isEmpty) return;
-              final nueva = Salsa(id: salsa?.id ?? '', nombre: nombre, disponible: disponible);
+              final nueva = Salsa(id: salsa?.id ?? '', name: nombre, disponible: disponible);
               if (salsa == null) {
                 await almacen.agregarSalsa(nueva);
               } else {

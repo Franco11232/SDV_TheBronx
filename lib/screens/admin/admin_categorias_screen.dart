@@ -29,7 +29,7 @@ class AdminCategoriasScreen extends StatelessWidget {
             itemBuilder: (context, i) {
               final c = categorias[i];
               return ListTile(
-                title: Text(c.nombre),
+                title: Text(c.name),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -60,7 +60,7 @@ class AdminCategoriasScreen extends StatelessWidget {
 
   void _abrirDialogoCategoria(BuildContext context, {Categoria? categoria}) {
     final almacenProvider = Provider.of<AlmacenProvider>(context, listen: false);
-    final nombreCtrl = TextEditingController(text: categoria?.nombre ?? '');
+    final nombreCtrl = TextEditingController(text: categoria?.name ?? '');
 
     showDialog(
       context: context,
@@ -79,7 +79,7 @@ class AdminCategoriasScreen extends StatelessWidget {
             onPressed: () async {
               final nombre = nombreCtrl.text.trim();
               if (nombre.isEmpty) return;
-              final nueva = Categoria(id: categoria?.id ?? '', nombre: nombre);
+              final nueva = Categoria(id: categoria?.id ?? '', name: nombre);
               if (categoria == null) {
                 await almacenProvider.agregarCategoria(nueva);
               } else {

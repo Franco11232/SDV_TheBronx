@@ -1,21 +1,24 @@
 // lib/models/salsa.dart
 class Salsa {
   final String id;
-  final String nombre;
+  // Corregido: La propiedad ahora es 'name' en lugar de 'nombre'.
+  final String name;
   final bool disponible;
 
-  Salsa({ required this.id, required this.nombre, this.disponible = true });
+  Salsa({ required this.id, required this.name, this.disponible = true });
 
   factory Salsa.fromMap(String id, Map<String, dynamic> data) {
     return Salsa(
       id: id,
-      nombre: data['nombre'] ?? data['name'] ?? '',
+      // Corregido: Solo se lee la clave 'name' para mantener la consistencia.
+      name: data['name'] ?? '',
       disponible: data['disponible'] ?? true,
     );
   }
 
   Map<String, dynamic> toMap() => {
-    'nombre': nombre,
+    // Corregido: Se guarda usando la clave 'name'.
+    'name': name,
     'disponible': disponible,
   };
 }

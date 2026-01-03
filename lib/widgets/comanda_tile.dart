@@ -5,14 +5,24 @@ class ComandaTile extends StatelessWidget {
   final Comanda comanda;
   final void Function(String nuevoEstado)? onActualizarEstado;
   final VoidCallback? onTap;
+  final Color? tileColor; // ✅ Nuevo parámetro para el color
 
-  const ComandaTile({super.key, required this.comanda, this.onActualizarEstado, this.onTap});
+  const ComandaTile({
+    super.key,
+    required this.comanda,
+    this.onActualizarEstado,
+    this.onTap,
+    this.tileColor, // ✅
+  });
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+      margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+      // ✅ Se aplica el color de fondo a la tarjeta.
+      color: tileColor,
       child: ListTile(
+        onTap: onTap, // ✅ Se asigna el callback al ListTile.
         title: Text(comanda.clientName.isEmpty ? 'Sin nombre' : comanda.clientName),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -27,11 +37,11 @@ class ComandaTile extends StatelessWidget {
             ? PopupMenuButton<String>(
                 onSelected: onActualizarEstado,
                 itemBuilder: (_) => [
-                  PopupMenuItem(value: 'en_preparacion', child: Text('En preparación')),
-                  PopupMenuItem(value: 'listo', child: Text('Listo')),
+                  const PopupMenuItem(value: 'en_preparacion', child: Text('En preparación')),
+                  const PopupMenuItem(value: 'listo', child: Text('Listo')),
                 ],
               )
-            : null, 
+            : null,
       ),
     );
   }

@@ -7,9 +7,11 @@ class Product {
   final String category;
   final bool disponible;
 
-  final bool tieneMediaBoneless;
-  final String? salsaMediaBoneless;
-  final List<String> salsasDisponibles;
+  // ✅ Corregido: Lógica de salsas mejorada
+  final bool acceptsSauce; // Indica si el producto puede llevar salsa
+  final List<String> salsasDisponibles; // Nombres de las salsas que aplican a este producto
+  
+  final bool tieneMediaBoneless; // Se mantiene para el costo extra
 
   Product({
     required this.id,
@@ -18,12 +20,11 @@ class Product {
     required this.stock,
     required this.category,
     required this.disponible,
-    this.tieneMediaBoneless = false,
-    this.salsaMediaBoneless,
+    this.acceptsSauce = false, // ✅
     this.salsasDisponibles = const [],
+    this.tieneMediaBoneless = false,
   });
 
-  // Corregido: Se eliminan las claves en español (nombre, precio, categoria)
   factory Product.fromMap(String id, Map<String, dynamic> data) {
     return Product(
       id: id,
@@ -32,22 +33,23 @@ class Product {
       stock: (data['stock'] ?? 0).toDouble(),
       category: data['category'] ?? '',
       disponible: data['disponible'] ?? true,
-      tieneMediaBoneless: data['tieneMediaBoneless'] ?? false,
-      salsaMediaBoneless: data['salsaMediaBoneless'],
+      // ✅
+      acceptsSauce: data['acceptsSauce'] ?? false,
       salsasDisponibles: List<String>.from(data['salsasDisponibles'] ?? []),
+      tieneMediaBoneless: data['tieneMediaBoneless'] ?? false,
     );
   }
 
-  // ✅ toMap ya usa los nombres en inglés, no necesita cambios.
   Map<String, dynamic> toMap() => {
     'name': name,
     'price': price,
     'stock': stock,
     'category': category,
     'disponible': disponible,
-    'tieneMediaBoneless': tieneMediaBoneless,
-    'salsaMediaBoneless': salsaMediaBoneless,
+    // ✅
+    'acceptsSauce': acceptsSauce,
     'salsasDisponibles': salsasDisponibles,
+    'tieneMediaBoneless': tieneMediaBoneless,
   };
 
   Product copyWith({
@@ -57,9 +59,10 @@ class Product {
     double? stock,
     String? category,
     bool? disponible,
-    bool? tieneMediaBoneless,
-    String? salsaMediaBoneless,
+    // ✅
+    bool? acceptsSauce,
     List<String>? salsasDisponibles,
+    bool? tieneMediaBoneless,
   }) {
     return Product(
       id: id ?? this.id,
@@ -68,9 +71,10 @@ class Product {
       stock: stock ?? this.stock,
       category: category ?? this.category,
       disponible: disponible ?? this.disponible,
-      tieneMediaBoneless: tieneMediaBoneless ?? this.tieneMediaBoneless,
-      salsaMediaBoneless: salsaMediaBoneless ?? this.salsaMediaBoneless,
+      // ✅
+      acceptsSauce: acceptsSauce ?? this.acceptsSauce,
       salsasDisponibles: salsasDisponibles ?? this.salsasDisponibles,
+      tieneMediaBoneless: tieneMediaBoneless ?? this.tieneMediaBoneless,
     );
   }
 }

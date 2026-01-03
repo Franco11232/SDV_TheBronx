@@ -33,7 +33,6 @@ class CocineroHome extends StatelessWidget {
             itemBuilder: (context, i) {
               final com = comandas[i];
 
-              // Corregido: Filtrar detalles nulos para evitar errores.
               final detallesValidos = com.details.where((d) => d != null).toList();
 
               return Card(
@@ -45,19 +44,20 @@ class CocineroHome extends StatelessWidget {
                   ),
                   subtitle: Text('Estado: ${com.estado} • Total: \$${com.total.toStringAsFixed(2)}'),
                   children: [
-                    // Corregido: Usar la lista de detalles filtrada.
                     ...detallesValidos.map((item) {
-                      // Como detallesValidos no tiene nulos, podemos acceder a las propiedades de forma segura.
                       return ListTile(
                         title: Text(item.nombre),
+                        // ✅ Corregido: Se muestra la información con la nueva estructura de datos.
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text('Cantidad: ${item.cantidad}'),
-                            if (item.salsasSeleccionadas != null && item.salsasSeleccionadas!.isNotEmpty)
-                              Text('Salsas: ${item.salsasSeleccionadas!.join(', ')}'),
+                            // Muestra la salsa si existe
+                            if (item.salsa != null)
+                              Text('Salsa: ${item.salsa}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                            // Indica si lleva el extra de media orden
                             if (item.llevaMediaOrdenBones)
-                              Text('Media orden: +\$${item.precioMediaOrden?.toStringAsFixed(2) ?? '75.00'}'),
+                              const Text('(Con media orden de Boneless)', style: TextStyle(fontStyle: FontStyle.italic)),
                           ],
                         ),
                         trailing: Text('\$${item.subTotal.toStringAsFixed(2)}'),

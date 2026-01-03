@@ -7,10 +7,9 @@ class ItemComanda {
   final double priceUnit;
   final double subTotal;
 
-  final bool llevaMediaOrdenBones;
-  final double? precioMediaOrden;
-  final List<String>? salsasSeleccionadas;
-  final String? salsaSeleccionada;
+  // ✅ Corregido: Se usa un único campo para la salsa.
+  final String? salsa;
+  final bool llevaMediaOrdenBones; // Se mantiene para identificar el item
 
   ItemComanda({
     required this.idProducto,
@@ -18,30 +17,23 @@ class ItemComanda {
     required this.cantidad,
     required this.priceUnit,
     required this.subTotal,
+    this.salsa,
     this.llevaMediaOrdenBones = false,
-    this.precioMediaOrden,
-    this.salsasSeleccionadas,
-    this.salsaSeleccionada,
   });
 
-  // Corregido: Asegurarse de que solo se usen claves en inglés.
   factory ItemComanda.fromMap(Map<String, dynamic> data) {
     return ItemComanda(
       idProducto: data['idProducto'] ?? '',
-      nombre: data['nombre'] ?? '', // Aunque 'nombre' está en español, parece ser el estándar en este modelo.
+      nombre: data['nombre'] ?? '',
       cantidad: (data['cantidad'] ?? 1) as int,
       priceUnit: (data['priceUnit'] ?? 0.0).toDouble(),
       subTotal: (data['subTotal'] ?? 0.0).toDouble(),
+      // ✅
+      salsa: data['salsa'],
       llevaMediaOrdenBones: data['llevaMediaOrdenBones'] ?? false,
-      precioMediaOrden: (data['precioMediaOrden'])?.toDouble(),
-      salsasSeleccionadas: data['salsasSeleccionadas'] != null
-          ? List<String>.from(data['salsasSeleccionadas'])
-          : null,
-      salsaSeleccionada: data['salsaSeleccionada'],
     );
   }
 
-  // ✅ toMap ya usa los nombres en inglés (y 'nombre'), no necesita cambios.
   Map<String, dynamic> toMap() {
     return {
       'idProducto': idProducto,
@@ -49,10 +41,9 @@ class ItemComanda {
       'cantidad': cantidad,
       'priceUnit': priceUnit,
       'subTotal': subTotal,
+      // ✅
+      'salsa': salsa,
       'llevaMediaOrdenBones': llevaMediaOrdenBones,
-      'precioMediaOrden': precioMediaOrden,
-      'salsasSeleccionadas': salsasSeleccionadas,
-      'salsaSeleccionada': salsaSeleccionada,
     };
   }
 
@@ -62,10 +53,9 @@ class ItemComanda {
     int? cantidad,
     double? priceUnit,
     double? subTotal,
+    // ✅
+    String? salsa,
     bool? llevaMediaOrdenBones,
-    double? precioMediaOrden,
-    List<String>? salsasSeleccionadas,
-    String? salsaSeleccionada,
   }) {
     return ItemComanda(
       idProducto: idProducto ?? this.idProducto,
@@ -73,10 +63,9 @@ class ItemComanda {
       cantidad: cantidad ?? this.cantidad,
       priceUnit: priceUnit ?? this.priceUnit,
       subTotal: subTotal ?? this.subTotal,
+      // ✅
+      salsa: salsa ?? this.salsa,
       llevaMediaOrdenBones: llevaMediaOrdenBones ?? this.llevaMediaOrdenBones,
-      precioMediaOrden: precioMediaOrden ?? this.precioMediaOrden,
-      salsasSeleccionadas: salsasSeleccionadas ?? this.salsasSeleccionadas,
-      salsaSeleccionada: salsaSeleccionada ?? this.salsaSeleccionada,
     );
   }
 }

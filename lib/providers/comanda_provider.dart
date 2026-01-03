@@ -10,43 +10,44 @@ class ComandaProvider extends ChangeNotifier {
   final List<ItemComanda> _productos = [];
   List<ItemComanda> get productos => _productos;
 
-  /// 🔹 Total calculado automáticamente
   double get total => _productos.fold(0.0, (sum, item) => sum + item.subTotal);
 
-  /// ============================================================
-  /// 🛒 GESTIÓN LOCAL
-  /// ============================================================
-
+  // ✅ Corregido para usar la nueva lógica de salsas y precios
   void agregarProducto(Product producto,
       {bool esMediaOrden = false, String? salsa}) {
+
+    // La condición ahora busca por el campo 'salsa'
     final index = _productos.indexWhere((p) =>
         p.idProducto == producto.id &&
         p.llevaMediaOrdenBones == esMediaOrden &&
-        p.salsaSeleccionada == salsa);
+        p.salsa == salsa);
 
     if (index >= 0) {
+      // Si el producto ya existe, solo se actualiza la cantidad y el subtotal
       final item = _productos[index];
+      final nuevaCantidad = item.cantidad + 1;
       _productos[index] = item.copyWith(
-        cantidad: item.cantidad + 1,
-        subTotal: (item.cantidad + 1) * item.priceUnit +
-            (item.llevaMediaOrdenBones ? (item.precioMediaOrden ?? 0) : 0),
+        cantidad: nuevaCantidad,
+        subTotal: nuevaCantidad * item.priceUnit,
       );
     } else {
+      // Si es un producto nuevo, se calcula su precio unitario (con el extra si es media orden)
+      final double precioUnitario = producto.price + (esMediaOrden ? 75.0 : 0);
       _productos.add(ItemComanda(
         idProducto: producto.id,
         nombre: producto.name,
         cantidad: 1,
-        priceUnit: producto.price,
-        subTotal: producto.price + (esMediaOrden ? 75.0 : 0),
+        priceUnit: precioUnitario, // El precio ya incluye el extra
+        subTotal: precioUnitario,   // El subtotal para 1 item es su precio unitario
         llevaMediaOrdenBones: esMediaOrden,
-        precioMediaOrden: esMediaOrden ? 75.0 : null,
-        salsaSeleccionada: salsa,
+        salsa: salsa, // Se usa el nuevo campo 'salsa'
       ));
     }
 
     notifyListeners();
   }
 
+  // ✅ Corregido para usar la nueva lógica de subtotal
   void disminuirCantidad(ItemComanda item) {
     final index = _productos.indexOf(item);
     if (index < 0) return;
@@ -56,10 +57,10 @@ class ComandaProvider extends ChangeNotifier {
       final nuevaCantidad = actual.cantidad - 1;
       _productos[index] = actual.copyWith(
         cantidad: nuevaCantidad,
-        subTotal: nuevaCantidad * actual.priceUnit +
-            (actual.llevaMediaOrdenBones ? (actual.precioMediaOrden ?? 0) : 0),
+        subTotal: nuevaCantidad * actual.priceUnit, // Cálculo simplificado
       );
     } else {
+      // Si la cantidad es 1, se elimina el producto
       _productos.removeAt(index);
     }
 
@@ -75,10 +76,6 @@ class ComandaProvider extends ChangeNotifier {
     _productos.clear();
     notifyListeners();
   }
-
-  /// ============================================================
-  /// 🔥 FIRESTORE
-  /// ============================================================
 
   Future<void> crearComanda({
     required String clientName,
@@ -113,6 +110,20 @@ class ComandaProvider extends ChangeNotifier {
       debugPrint("❌ Error al crear comanda: $e");
     }
   }
+  
+  Future<void> actualizarComanda(Comanda comanda) async {
+    if (comanda.id == null) {
+      debugPrint('❌ No se puede actualizar una comanda sin ID.');
+      return;
+    }
+    try {
+      await _db.collection('comandas').doc(comanda.id).update(comanda.toMap());
+      debugPrint("✅ Comanda actualizada correctamente.");
+    } catch (e) {
+      debugPrint("❌ Error al actualizar la comanda: $e");
+      rethrow; 
+    }
+  }
 
   Stream<List<Comanda>> streamComandasActivas() {
     return _db
@@ -136,6 +147,22 @@ class ComandaProvider extends ChangeNotifier {
       debugPrint("🟢 Estado actualizado para comanda $id");
     } catch (e) {
       debugPrint('❌ Error al actualizar estado: $e');
+    }
+  }
+
+  Future<void> registrarPago(String comandaId, String metodo) async {
+    try {
+      await _db.collection('comandas').doc(comandaId).update({
+        'estado': 'entregado',
+        'payment': {
+          'metodo': metodo,
+          'estado': 'pagado',
+          'fecha': FieldValue.serverTimestamp(),
+        }
+      });
+      debugPrint("✅ Pago registrado para comanda $comandaId");
+    } catch (e) {
+      debugPrint("❌ Error al registrar el pago: $e");
     }
   }
 

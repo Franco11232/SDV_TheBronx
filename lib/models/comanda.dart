@@ -29,10 +29,9 @@ class Comanda {
     required this.details,
   });
 
-  // Corregido: Se eliminan las claves en español (clienteNombre, fecha, etc.)
   factory Comanda.fromMap(String id, Map<String, dynamic> data) {
     DateTime fecha;
-    final rawFecha = data['date']; // Solo se usa la clave en inglés
+    final rawFecha = data['date'];
     if (rawFecha is Timestamp) {
       fecha = rawFecha.toDate();
     } else if (rawFecha is String) {
@@ -63,7 +62,6 @@ class Comanda {
     );
   }
 
-  // ✅ toMap ya usa los nombres en inglés, no necesita cambios.
   Map<String, dynamic> toMap() {
     return {
       'clientName': clientName,
@@ -73,9 +71,38 @@ class Comanda {
       'addressCol': addressCol,
       'estado': estado,
       'payment': payment,
-      'date': FieldValue.serverTimestamp(),
+      'date': date, // Se usa la fecha existente
       'total': total,
       'details': details.map((d) => d.toMap()).toList(),
     };
+  }
+  
+  // ✅ Añadido método copyWith para facilitar las actualizaciones
+  Comanda copyWith({
+    String? id,
+    String? clientName,
+    String? clientPhone,
+    String? type,
+    String? address,
+    String? addressCol,
+    String? estado,
+    Map<String, dynamic>? payment,
+    DateTime? date,
+    double? total,
+    List<ItemComanda>? details,
+  }) {
+    return Comanda(
+      id: id ?? this.id,
+      clientName: clientName ?? this.clientName,
+      clientPhone: clientPhone ?? this.clientPhone,
+      type: type ?? this.type,
+      address: address ?? this.address,
+      addressCol: addressCol ?? this.addressCol,
+      estado: estado ?? this.estado,
+      payment: payment ?? this.payment,
+      date: date ?? this.date,
+      total: total ?? this.total,
+      details: details ?? this.details,
+    );
   }
 }

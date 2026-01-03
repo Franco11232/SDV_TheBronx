@@ -24,10 +24,11 @@ class _VentasScreenState extends State<VentasScreen> {
     final inicioDia = DateTime(hoy.year, hoy.month, hoy.day);
     final finDia = inicioDia.add(const Duration(days: 1));
 
+    // Corregido: La consulta ahora usa 'date' en lugar de 'fecha'.
     final snapshot = await FirebaseFirestore.instance
         .collection('comandas')
-        .where('fecha', isGreaterThanOrEqualTo: inicioDia)
-        .where('fecha', isLessThan: finDia)
+        .where('date', isGreaterThanOrEqualTo: inicioDia)
+        .where('date', isLessThan: finDia)
         .get();
 
     double totalDia = 0;
@@ -39,8 +40,8 @@ class _VentasScreenState extends State<VentasScreen> {
       final comanda = Comanda.fromMap(doc.id, data);
       totalDia += comanda.total;
       for (var item in comanda.details) {
-        final sub = (item.subTotal ?? item.subTotal);
-        porProducto[item.nombre] = (porProducto[item.nombre] ?? 0) + sub;
+        // Corregido: Simplificado el acceso a subTotal.
+        porProducto[item.nombre] = (porProducto[item.nombre] ?? 0) + item.subTotal;
       }
     }
 
@@ -57,10 +58,14 @@ class _VentasScreenState extends State<VentasScreen> {
           if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
           if (snapshot.hasError) return Center(child: Text("Error: ${snapshot.error}"));
 
-          final data = snapshot.data!;
+          final data = snapshot.data ?? {'total': 0.0, 'cantidad': 0, 'porProducto': {}};
           final total = data['total'] as double;
           final cantidad = data['cantidad'] as int;
           final porProducto = data['porProducto'] as Map<String, double>;
+
+          if (cantidad == 0) {
+            return const Center(child: Text("No hay ventas registradas hoy."));
+          }
 
           return Padding(
             padding: const EdgeInsets.all(16),

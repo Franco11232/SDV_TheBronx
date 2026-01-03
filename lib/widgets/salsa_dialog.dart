@@ -18,7 +18,7 @@ class _SalsaDialogState extends State<SalsaDialog> {
   void initState() {
     super.initState();
     if (widget.salsa != null) {
-      _nombreCtrl.text = widget.salsa!.nombre;
+      _nombreCtrl.text = widget.salsa!.name;
       _disponible = widget.salsa!.disponible;
     }
   }
@@ -41,7 +41,7 @@ class _SalsaDialogState extends State<SalsaDialog> {
           onPressed: () async {
             final nombre = _nombreCtrl.text.trim();
             if (nombre.isEmpty) return;
-            final s = Salsa(id: widget.salsa?.id ?? '', nombre: nombre, disponible: _disponible);
+            final s = Salsa(id: widget.salsa?.id ?? '', name: nombre, disponible: _disponible);
             if (widget.salsa == null) {
               await almacen.agregarSalsa(s);
             } else {
